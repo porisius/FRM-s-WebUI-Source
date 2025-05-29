@@ -16,30 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4.4.0
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Cache npm dependencies
-        uses: actions/cache@v4.2.3
-        with:
-          path: |
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       - name: Disable Next.js telemetry
-        run: npx next telemetry disable
+        run: bunx next telemetry disable
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies with Bun
+        run: bun install
 
-      - name: Build project
-        run: npm run build
+      - name: Build project with Bun
+        run: bun run build
 
       - name: Rename output folder
         run: mv ./out ./www
