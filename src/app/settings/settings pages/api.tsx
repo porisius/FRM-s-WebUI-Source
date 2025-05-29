@@ -15,7 +15,7 @@ async function checkConnection(URL: string) {
 
   return await fetch(urlCleaned() + "getCoffee")
     .then(async (response) => {
-      if (response.status === 200) {
+      if (response.status === 418) {
         localStorage.setItem("url", urlCleaned());
 
         return true;
