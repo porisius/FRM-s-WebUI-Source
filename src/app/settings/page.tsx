@@ -8,21 +8,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Settings_API from "@/app/settings/settings pages/api";
+import { appVersion, author } from "@/lib/constants";
+import Link from "next/link";
 
-const version = "1.0.0";
 export default function Settings() {
   return (
     <div style={{ margin: 5, padding: 25 }}>
       <Card>
         <CardHeader>
-          <CardTitle>Web UI Version : {version}</CardTitle>
+          <CardTitle>Web UI Version : {appVersion}</CardTitle>
           <CardDescription>Web UI settings</CardDescription>
         </CardHeader>
         <CardContent style={{ margin: 5 }}>
           <Settings_API />
         </CardContent>
         <CardFooter>
-          <p className="text-sm text-muted-foreground">Made By VOID</p>
+          <Link
+            href={author.url}
+            className={"text-sm text-muted-foreground underline"}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Made By {author.name} 🩷
+          </Link>
         </CardFooter>
       </Card>
     </div>

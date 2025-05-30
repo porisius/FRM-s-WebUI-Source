@@ -11,10 +11,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { Card } from "@/components/ui/card";
+import { DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 
 const chartConfig = {
   powercapacity: {
@@ -127,7 +126,7 @@ export default function Power() {
   const [items, setItems] = useState<{
     [key: string]: (string | number)[];
   }>({
-    "priority-1": ["Hello", "World", "How", "Are"],
+    "priority-1": [],
     "priority-2": [],
     "priority-3": [],
     "priority-4": [],
@@ -151,20 +150,54 @@ export default function Power() {
       undefined: [],
     };
 
-    switchData.map((switchItem: any) => {
-      if (switchItem.Priority !== -1) {
-        const key = `priority-${switchItem.Priority}`;
-        if (list[key]) {
-          list[key].push(switchItem);
-        } else {
-          list["undefined"].push(switchItem);
-        }
+    switchData.forEach((switchItem: any) => {
+      const key =
+        switchItem.Priority !== -1
+          ? `priority-${switchItem.Priority}`
+          : "undefined";
+      if (list[key]) {
+        list[key].push(switchItem);
       } else {
         list["undefined"].push(switchItem);
       }
     });
     setItems(list);
   }, [switchData]);
+
+  const getPriorityMap = () => {
+    const map: { [id: string]: string } = {};
+    Object.entries(items).forEach(([priority, switchList]) => {
+      switchList.forEach((item: any) => {
+        map[item.ID] = priority;
+      });
+    });
+    return map;
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setItems((prev) => {
+        const origin = Object.keys(prev).find((key) =>
+          prev[key].some((item: any) => item.ID === active.id),
+        )!;
+        const destination = over.id;
+
+        if (!origin || !destination || origin === destination) return prev;
+
+        const movedItem = prev[origin].find(
+          (item: any) => item.ID === active.id,
+        )!;
+
+        return {
+          ...prev,
+          [origin]: prev[origin].filter((item: any) => item.ID !== active.id),
+          [destination]: [...prev[destination], movedItem],
+        };
+      });
+    }
+  };
 
   return (
     <div style={{ margin: 5, padding: 25 }}>
@@ -227,78 +260,67 @@ export default function Power() {
           </LineChart>
         </ChartContainer>
       </Card>
-      <Card className={"mt-[5px]"}>
-        <CardContent className={"m-[24]"}>
-          <DndContext
-            onDragEnd={(event) => {
-              const { active, over } = event;
+      {/*<Card className={"mt-[5px]"}>*/}
+      {/*  <CardContent className={"m-[24]"}>*/}
+      {/*    <DndContext*/}
+      {/*      onDragEnd={handleDragEnd}*/}
+      {/*      modifiers={[restrictToWindowEdges]}*/}
+      {/*    >*/}
+      {/*      <div className="flex w-full">*/}
+      {/*        <div className="grid grid-rows-2 grid-cols-4 gap-2 grow">*/}
+      {/*          {Object.entries(items)*/}
+      {/*            .filter(([priority]) => priority !== "undefined")*/}
+      {/*            .map(([priority, itemList]) => (*/}
+      {/*              <Card key={priority}>*/}
+      {/*                <CardHeader>*/}
+      {/*                  <CardTitle>*/}
+      {/*                    {priority*/}
+      {/*                      .replace("-", " ")*/}
+      {/*                      .replace(/^./, (str) => str.toUpperCase())}*/}
+      {/*                  </CardTitle>*/}
+      {/*                </CardHeader>*/}
+      {/*                <CardContent>*/}
+      {/*                  <Droppable id={priority}>*/}
+      {/*                    {itemList.map((item: any) => (*/}
+      {/*                      <Draggable key={item.ID} id={item.ID}>*/}
+      {/*                        {item.SwitchTag ? item.SwitchTag : item.ID}*/}
+      {/*                      </Draggable>*/}
+      {/*                    ))}*/}
+      {/*                  </Droppable>*/}
+      {/*                </CardContent>*/}
+      {/*              </Card>*/}
+      {/*            ))}*/}
+      {/*        </div>*/}
 
-              if (over) {
-                setItems((prev) => {
-                  const origin = Object.keys(prev).find((key) =>
-                    prev[key as keyof typeof prev].includes(active.id),
-                  ) as keyof typeof prev;
-
-                  const destination = over.id as keyof typeof prev;
-
-                  if (!origin || !destination || origin === destination)
-                    return prev;
-
-                  return {
-                    ...prev,
-                    [origin]: prev[origin].filter((item) => item !== active.id),
-                    [destination]: [...prev[destination], active.id],
-                  };
-                });
-              }
-            }}
-            modifiers={[restrictToWindowEdges]}
-          >
-            <div className={"flex w-full"}>
-              <div className={"grid grid-rows-2 grid-cols-4 gap-1 grow"}>
-                {/*{*/}
-                {/*  Object.entries(items)*/}
-                {/*    .filter(([priority]) => priority !== "undefined")*/}
-                {/*    .map(([priority, itemList]) => (*/}
-                {/*      <Card key={priority}>*/}
-                {/*        <CardHeader>*/}
-                {/*          <CardTitle>*/}
-                {/*            {priority*/}
-                {/*              .replace("-", " ")*/}
-                {/*              .replace(/^./, (str) => str.toUpperCase())}*/}
-                {/*          </CardTitle>*/}
-                {/*        </CardHeader>*/}
-                {/*        <CardContent>*/}
-                {/*          <Droppable id={priority}>*/}
-                {/*            {itemList.map((item) => (*/}
-                {/*              <Draggable key={item} id={item}>*/}
-                {/*                {item}*/}
-                {/*              </Draggable>*/}
-                {/*            ))}*/}
-                {/*          </Droppable>*/}
-                {/*        </CardContent>*/}
-                {/*      </Card>*/}
-                {/*    ))}*/}
-              </div>
-              <Card className={"ml-[5px]"}>
-                <CardHeader>
-                  <CardTitle>Undefined</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Droppable id={"undefined"}>
-                    {items["undefined"] &&
-                      items["undefined"].map((item: any) => (
-                        <Draggable key={item.ID} id={item}>
-                          {item.SwitchTag}
-                        </Draggable>
-                      ))}
-                  </Droppable>
-                </CardContent>
-              </Card>
-            </div>
-          </DndContext>
-        </CardContent>
-      </Card>
+      {/*        <Card className="ml-2 min-w-[150px]">*/}
+      {/*          <CardHeader>*/}
+      {/*            <CardTitle>Undefined</CardTitle>*/}
+      {/*          </CardHeader>*/}
+      {/*          <CardContent>*/}
+      {/*            <Droppable id={"undefined"}>*/}
+      {/*              {items["undefined"].map((item: any) => (*/}
+      {/*                <Draggable key={item.ID} id={item.ID}>*/}
+      {/*                  {item.SwitchTag ? item.SwitchTag : item.ID}*/}
+      {/*                </Draggable>*/}
+      {/*              ))}*/}
+      {/*            </Droppable>*/}
+      {/*          </CardContent>*/}
+      {/*        </Card>*/}
+      {/*      </div>*/}
+      {/*    </DndContext>*/}
+      {/*    <div className="mt-4 text-center">*/}
+      {/*      <Button*/}
+      {/*        onClick={() => {*/}
+      {/*          const result = getPriorityMap();*/}
+      {/*          console.log("Switch priority mapping:", result);*/}
+      {/*          // TODO: Add logic for the setSwitch part*/}
+      {/*        }}*/}
+      {/*      >*/}
+      {/*        Save Priorities*/}
+      {/*      </Button>*/}
+      {/*    </div>*/}
+      {/*  </CardContent>*/}
+      {/*</Card>*/}
     </div>
   );
 }

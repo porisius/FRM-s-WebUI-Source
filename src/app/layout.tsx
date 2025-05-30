@@ -3,6 +3,12 @@ import "./css/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navigation from "@/components/navigation";
 import React from "react";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-custom-font",
+});
 
 export const metadata: Metadata = {
   title: "Ficsit Remote Monitoring",
@@ -16,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.className}>
       <body>
         <ThemeProvider
           attribute="class"
