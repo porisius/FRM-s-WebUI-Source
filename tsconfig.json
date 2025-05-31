@@ -27,6 +27,12 @@
       ],
       "@public/*": [
         "public/*"
+      ],
+      "@types/*": [
+        "src/types/*"
+      ],
+      "@enums/*": [
+        "src/types/enums/*"
       ]
     },
     "target": "ES2017",
@@ -36,7 +42,7 @@
     "**/*.ts",
     "**/*.tsx",
     "./next-env.d.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
   ],
   "exclude": [
     "node_modules"

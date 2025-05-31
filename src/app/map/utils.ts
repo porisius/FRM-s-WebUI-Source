@@ -31,7 +31,7 @@ export const layerStuff: layerStuffType = {
   artifacts: {
     icon: normal.artifacts.somersloop,
     label: "Artifacts",
-    visible: true,
+    visible: false,
     id: "artifacts",
     url: "getArtifacts",
   },
@@ -167,5 +167,12 @@ export const layerStuff: layerStuffType = {
     visible: false,
     id: "vehicles",
     url: "getVehicles",
+  },
+  storage_inv: {
+    icon: normal.crate.crate_loot,
+    label: "Storage Inv",
+    visible: false,
+    id: "storage_inv",
+    url: "getStorageInv",
   },
 };

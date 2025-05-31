@@ -91,3 +91,25 @@ export function rgbToHsl([r, g, b]: [number, number, number]) {
   // @ts-ignore
   return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
+
+export function toHex6(hexWithAlpha: string): string {
+  return `#${hexWithAlpha.replace(/^#/, "").substring(0, 6)}`;
+}
+
+export function hexToRgb(hex: string): [number, number, number] {
+  const sanitized = hex.replace(/^#/, "");
+
+  const fullHex =
+    sanitized.length === 3
+      ? sanitized
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : sanitized;
+
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+
+  return [r, g, b];
+}

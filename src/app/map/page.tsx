@@ -1,6 +1,5 @@
 "use client";
 
-// TODO: add inv to the map
 // TODO: add chat btn to message with ingame chat on the bottom right
 
 import { baseURL } from "@/lib/api";
@@ -31,13 +30,21 @@ import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { layerStuff, layerStuffType, rotatePoint } from "../map/utils";
-import { adjustColorShades, RGB } from "@/lib/helpers";
+import { adjustColorShades, hexToRgb, RGB } from "@/lib/helpers";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { classNameColors, colors, purityColors } from "@/lib/constants";
+import { Artifact } from "@/types/artifacts";
+import { ResourceNode } from "@/types/resource-node";
+import { Artifacts } from "@enums/artifacts";
+import { DropPod } from "@/types/drop-pod";
+import { PowerSlugs } from "@/types/power-slug";
+import { Vehicles } from "@/types/vehicles";
+import { Player } from "@/types/player";
+import { SpaceElevator } from "@/types/space-elevator";
 
 const MAP_VIEW = new OrthographicView({
   id: "2d-scene",
@@ -190,55 +197,59 @@ export default function MapPage() {
     MakeIconLayer(
       misc.space_elevator.space_elevator,
       "space_elevator",
-      function (d: any) {
+      function (d: SpaceElevator) {
         return {
           height: 70,
           url:
-            d["FullyUpgraded"] || d["UpgradeReady"]
+            d.FullyUpgraded || d.UpgradeReady
               ? misc.space_elevator.space_elevator_ready
               : misc.space_elevator.space_elevator,
           width: 70,
         };
       },
     ),
-    MakeIconLayer(misc.player.alive, "players", function (d: any) {
+    MakeIconLayer(misc.player.alive, "players", function (d: Player) {
       return {
-        url: d["Dead"]
+        url: d.Dead
           ? misc.player.player_dead
-          : (d["Online"] as boolean)
+          : (d.Online as boolean)
             ? misc.player.alive
             : misc.player.player_offline,
         width: 70,
         height: 70,
       };
     }),
-    MakeIconLayer(misc.vehicles.trucks.truck, "vehicles", function (d: any) {
-      return {
-        height: 70,
-        url:
-          {
-            BP_Golfcart_C: misc.vehicles.factory_cart,
-            BP_Tractor_C: misc.vehicles.tractor,
-            BP_Truck_C: misc.vehicles.trucks.truck,
-          }[d["ClassName"] as string] ?? misc.vehicles.explorer,
-        width: 70,
-      };
-    }),
-    MakeIconLayer(power_slugs.power_slug, "slugs", function (d: any) {
+    MakeIconLayer(
+      misc.vehicles.trucks.truck,
+      "vehicles",
+      function (d: Vehicles) {
+        return {
+          height: 70,
+          url:
+            {
+              BP_Golfcart_C: misc.vehicles.factory_cart,
+              BP_Tractor_C: misc.vehicles.tractor,
+              BP_Truck_C: misc.vehicles.trucks.truck,
+            }[d.ClassName as string] ?? misc.vehicles.explorer,
+          width: 70,
+        };
+      },
+    ),
+    MakeIconLayer(power_slugs.power_slug, "slugs", function (d: PowerSlugs) {
       return {
         url:
           {
             BP_Crystal_C: power_slugs.power_slug_mk1,
             BP_Crystal_mk2_C: power_slugs.power_slug_mk2,
             BP_Crystal_mk3_C: power_slugs.power_slug_mk3,
-          }[d["ClassName"] as string] ?? misc.question_mark,
+          }[d.ClassName as string] ?? misc.question_mark,
         width: 70,
         height: 70,
       };
     }),
-    MakeIconLayer(misc.drop_pod.drop_pod, "drop_pod", function (d: any) {
+    MakeIconLayer(misc.drop_pod.drop_pod, "drop_pod", function (d: DropPod) {
       return {
-        url: d["Looted"]
+        url: d.Looted
           ? misc.drop_pod.drop_pod_collected
           : misc.drop_pod.drop_pod,
         width: 70,
@@ -254,22 +265,26 @@ export default function MapPage() {
     //     height: 70,
     //   };
     // }),
-    MakeIconLayer(misc.question_mark, "resource_node", function (d: any) {
-      return {
-        url: d["ClassName"]
-          ? `${resources + d["ClassName"]}/${d["Purity"].toLowerCase()}.png`
-          : misc.question_mark,
-        width: 70,
-        height: 70,
-      };
-    }),
-    MakeIconLayer(artifacts.somersloop, "artifacts", function (d) {
+    MakeIconLayer(
+      misc.question_mark,
+      "resource_node",
+      function (d: ResourceNode) {
+        return {
+          url: d.ClassName
+            ? `${resources + d.ClassName}/${d.Purity.toLowerCase()}.png`
+            : misc.question_mark,
+          width: 70,
+          height: 70,
+        };
+      },
+    ),
+    MakeIconLayer(artifacts.somersloop, "artifacts", function (d: Artifact) {
       return {
         height: 70,
         url:
-          d["Name"] == "Somersloop"
+          d.ClassName == Artifacts.Somersloop
             ? artifacts.somersloop
-            : d["Name"] == "Mercer Sphere"
+            : d.ClassName == Artifacts.MercerSphere
               ? artifacts.mercer_sphere
               : misc.question_mark,
         width: 70,
@@ -400,7 +415,7 @@ export default function MapPage() {
         };
       },
       getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d) => [d["location1"].x, d["location1"].y * -1],
+      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
       pickable: true,
       getWidth: 2,
       visible: nyaa.belts.visible,
@@ -427,12 +442,42 @@ export default function MapPage() {
         };
       },
       getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d) => [d["location1"].x, d["location1"].y * -1],
+      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
       pickable: true,
       getWidth: 2,
       visible: nyaa.pipes.visible,
       updateTriggers: {
         visible: nyaa.pipes.visible,
+      },
+    }),
+    new PolygonLayer({
+      data: data.storage_inv.data,
+      getFillColor: (d: any) => hexToRgb("#e5c890"),
+      getLineColor: [41, 44, 60],
+
+      getLineWidth: 20,
+      getPolygon: (d) => {
+        const bbox = d.BoundingBox;
+        const rotation = d.location.rotation - 90;
+
+        const corners: [number, number][] = [
+          [bbox.min.x, bbox.min.y * -1],
+          [bbox.max.x, bbox.min.y * -1],
+          [bbox.max.x, bbox.max.y * -1],
+          [bbox.min.x, bbox.max.y * -1],
+        ];
+
+        const center: [number, number] = [d.location.x, d.location.y * -1];
+
+        return corners.map((pt) => rotatePoint(pt, center, rotation));
+      },
+      positionFormat: "XY",
+      id: "storage_inv",
+      lineWidthMinPixels: 1,
+      pickable: true,
+      visible: nyaa.storage_inv.visible,
+      updateTriggers: {
+        visible: nyaa.storage_inv.visible,
       },
     }),
   ];
@@ -489,7 +534,17 @@ export default function MapPage() {
         </thead>
         <tbody>
           {built_nyaa_filters.map(
-            ({ className, name, extra, layerId }: any) => {
+            ({
+              className,
+              name,
+              extra,
+              layerId,
+            }: {
+              className: string;
+              name: string;
+              extra: string[];
+              layerId: string;
+            }) => {
               const icon = `markers/normal/${className}.png`;
 
               const changedMark = new_nyaa_filters.some((filter: string) =>

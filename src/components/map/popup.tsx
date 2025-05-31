@@ -12,6 +12,19 @@ import { renderToString } from "react-dom/server";
 import { classNameColors, colors, dev, purityColors } from "@/lib/constants";
 import { adjustColorShades, RGB, rgbToHsl } from "@/lib/helpers";
 import { Layer } from "deck.gl";
+import { IDClassObject, InventoryItem } from "@/types/general";
+import { Player } from "@/types/player";
+import { TruckStation, Vehicles } from "@/types/vehicles";
+import { Drone, DroneStation } from "@/types/drone";
+import { Train, TrainStation } from "@/types/trains";
+import { DropPod } from "@/types/drop-pod";
+import { PowerSlugs } from "@/types/power-slug";
+import { RadarTower } from "@/types/radar-tower";
+import { SpaceElevator } from "@/types/space-elevator";
+import { ResourceNode } from "@/types/resource-node";
+import { HubTerminal } from "@/types/hub-terminal";
+import { Artifact } from "@/types/artifacts";
+import { Artifacts } from "@/types/enums/artifacts";
 
 const BoolBadge = ({ bool, text }: { bool: boolean; text: string }) => (
   <Badge
@@ -32,7 +45,7 @@ const BoolBadge = ({ bool, text }: { bool: boolean; text: string }) => (
   </Badge>
 );
 
-export const makePopup = (layer: Layer | any, data: any) => {
+export const makePopup = (layer: Layer | any, json: IDClassObject) => {
   const layerId: string = layer.id;
   let popup: {
     title: string | ReactElement<any>;
@@ -42,44 +55,50 @@ export const makePopup = (layer: Layer | any, data: any) => {
     description: <></>,
   };
 
-  let popup_color = purityColors[data["Purity"] as string] ?? "229deg,13%,52%";
+  let popup_color =
+    purityColors[json as any["Purity"] as string] ?? "229deg,13%,52%";
 
   const original_text_color = popup_color;
   let text_color = popup_color;
 
   switch (layerId) {
-    case "players":
-      popup.title = `Player: ${data["Name"] || "Offline"}`;
-      popup_color = data["Dead"]
+    case "players": {
+      let data = json as Player;
+      popup.title = `Player: ${data.Name || "Offline"}`;
+      popup_color = data.Dead
         ? colors.orange
-        : (data["Online"] as boolean)
+        : (data.Online as boolean)
           ? colors.green
           : colors.red;
       break;
-    case "vehicles":
+    }
+    case "vehicles": {
+      let data = json as Vehicles;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <ul className="ml-6 list-disc [&>li]:mt-2">
-              <li>Current Gear: {data["CurrentGear"]}</li>
-              <li>Forward Speed: {data["ForwardSpeed"]}</li>
-              <li>Engine RPM: {data["EngineRPM"]}</li>
-              <li>Throttle Percent: {data["ThrottlePercent"]}</li>
-              <li>Path Name: {data["PathName"]}</li>
+              <li>Current Gear: {data.CurrentGear}</li>
+              <li>Forward Speed: {data.ForwardSpeed}</li>
+              <li>Engine RPM: {data.EngineRPM}</li>
+              <li>Throttle Percent: {data.ThrottlePercent}</li>
+              <li>Path Name: {data.PathName}</li>
             </ul>
             <Separator className={"my-2 bg-white"} />
             <div className={"flex flex-col gap-1"}>
-              <BoolBadge bool={data["FollowingPath"]} text={"Following Path"} />
-              <BoolBadge bool={data["Autopilot"]} text={"Autopilot"} />
+              <BoolBadge bool={data.FollowingPath} text={"Following Path"} />
+              <BoolBadge bool={data.Autopilot} text={"Autopilot"} />
             </div>
           </div>
         ),
       };
       break;
-    case "truck_station":
+    }
+    case "truck_station": {
+      let data = json as TruckStation;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <p>LoadMode: WIP</p>
@@ -87,61 +106,73 @@ export const makePopup = (layer: Layer | any, data: any) => {
         ),
       };
       break;
-    case "drone":
+    }
+    case "drone": {
+      let data = json as Drone;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
-            <p>Destination: {data["CurrentDestination"]}</p>
-            <p>Flying Speed: {Math.round(data["FlyingSpeed"])}</p>
+            <p>Destination: {data.CurrentDestination}</p>
+            <p>Flying Speed: {Math.round(data.FlyingSpeed)}</p>
             <BoolBadge
-              bool={Math.round(data["FlyingSpeed"]) > 0}
+              bool={Math.round(data.FlyingSpeed) > 0}
               text={"Flying"}
             />
           </div>
         ),
       };
       break;
-    case "drone_station":
+    }
+    case "drone_station": {
+      let data = json as DroneStation;
       popup = {
         title: data["Name"],
-        description: <p> Paired Station: {data["PairedStation"]}</p>,
+        description: <p> Paired Station: {data.PairedStation}</p>,
       };
       break;
-    case "train":
+    }
+    case "train": {
+      let data = json as Train;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <ul className="my-2 ml-6 list-disc [&>li]:mt-2">
-              <li>Speed: {data["ForwardSpeed"]}</li>
-              <li>Train Station: {data["TrainStation"]}</li>
+              <li>Speed: {data.ForwardSpeed}</li>
+              <li>Train Station: {data.TrainStation}</li>
             </ul>
-            <BoolBadge bool={data["Derailed"]} text={"Derailed"} />
+            <BoolBadge bool={data.Derailed} text={"Derailed"} />
           </div>
         ),
       };
       break;
-    case "train_station":
+    }
+    case "train_station": {
+      let data = json as TrainStation;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <ul className="my-2 ml-6 list-disc [&>li]:mt-2">
-              <li>Transfer Rate: {data["TransferRate"]}</li>
-              <li>Inflow rate: {data["InflowRate"]}</li>
-              <li>Outflow rate: {data["OutflowRate"]}</li>
+              <li>Transfer Rate: {data.TransferRate}</li>
+              <li>Inflow rate: {data.InflowRate}</li>
+              <li>Outflow rate: {data.OutflowRate}</li>
             </ul>
           </div>
         ),
       };
       break;
-    case "radio_tower":
-      popup.title = data["Name"];
+    }
+    case "radio_tower": {
+      let data = json as RadarTower;
+      popup.title = data.Name;
       break;
-    case "slugs":
+    }
+    case "slugs": {
+      let data = json as PowerSlugs;
       popup_color =
-        classNameColors[data["ClassName"] as keyof typeof classNameColors] ??
+        classNameColors[data.ClassName as keyof typeof classNameColors] ??
         "229deg,13%,52%";
       popup.title = (
         <div>
@@ -150,41 +181,29 @@ export const makePopup = (layer: Layer | any, data: any) => {
               BP_Crystal_C: "MK1",
               BP_Crystal_mk2_C: "MK2",
               BP_Crystal_mk3_C: "MK3",
-            }[data["ClassName"] as string]
+            }[data.ClassName as string]
           }
           {" Power Slug"}
         </div>
       );
       break;
-    case "space_elevator":
-      let fully_upgraded_color = data["FullyUpgraded"]
-        ? colors.green
-        : colors.red;
-      let upgrade_ready_color = data["UpgradeReady"]
-        ? colors.green
-        : colors.red;
+    }
+    case "space_elevator": {
+      let data = json as SpaceElevator;
+      let fully_upgraded_color = data.FullyUpgraded ? colors.green : colors.red;
+      let upgrade_ready_color = data.UpgradeReady ? colors.green : colors.red;
       popup_color =
-        data["FullyUpgraded"] || data["UpgradeReady"]
-          ? colors.green
-          : colors.red;
+        data.FullyUpgraded || data.UpgradeReady ? colors.green : colors.red;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <ul className="ml-6 list-disc [&>li]:mt-2">
-              {data["CurrentPhase"].map(
-                (item: {
-                  Name: string;
-                  ClassName: string;
-                  Amount: number;
-                  RemainingCost: number;
-                  TotalCost: number;
-                }) => (
-                  <li key={item.ClassName + data["ID"]}>
-                    {item.Name} {item.Amount}/{item.TotalCost}
-                  </li>
-                ),
-              )}
+              {data.CurrentPhase.map((item) => (
+                <li key={item.ClassName + data["ID"]}>
+                  {item.Name} {item.Amount}/{item.TotalCost}
+                </li>
+              ))}
             </ul>
             <div className={"flex flex-col gap-1"}>
               <Badge
@@ -199,12 +218,12 @@ export const makePopup = (layer: Layer | any, data: any) => {
                 className={"w-full justify-center border relative inline-flex"}
                 variant={"outline"}
               >
-                {data["FullyUpgraded"] ? (
+                {data.FullyUpgraded ? (
                   <Check className="size-4 absolute left-[5px]" />
                 ) : (
                   <X className="size-4 absolute left-[5px]" />
                 )}
-                {data["FullyUpgraded"]
+                {data.FullyUpgraded
                   ? "Fully Upgraded 🎉"
                   : "Not Fully Upgraded"}
               </Badge>
@@ -220,20 +239,22 @@ export const makePopup = (layer: Layer | any, data: any) => {
                 className={"w-full justify-center border relative inline-flex"}
                 variant={"outline"}
               >
-                {data["UpgradeReady"] ? (
+                {data.UpgradeReady ? (
                   <Check className="size-4 absolute left-[5px]" />
                 ) : (
                   <X className="size-4 absolute left-[5px]" />
                 )}
-                {data["UpgradeReady"] ? "Upgrade Ready" : "Upgrade Not Ready"}
+                {data.UpgradeReady ? "Upgrade Ready" : "Upgrade Not Ready"}
               </Badge>
             </div>
           </div>
         ),
       };
       break;
-    case "drop_pod":
-      popup_color = data["Looted"] ? colors.green : colors.red;
+    }
+    case "drop_pod": {
+      let data = json as unknown as DropPod;
+      popup_color = data.Looted ? colors.green : colors.red;
       popup = {
         title: "Drop Pod",
         description: (
@@ -295,9 +316,11 @@ export const makePopup = (layer: Layer | any, data: any) => {
         ),
       };
       break;
+    }
     case "resource_node":
     case "resource_geyser":
     case "resource_well": {
+      let data = json as ResourceNode;
       const typeLabel = {
         resource_node: "Resource Node",
         resource_geyser: "Resource Geyser",
@@ -328,7 +351,8 @@ export const makePopup = (layer: Layer | any, data: any) => {
       };
       break;
     }
-    case "factory":
+    case "factory": {
+      let data = json as any; // TODO: Add factory type
       popup = {
         title: data["Name"],
         description: (
@@ -346,7 +370,9 @@ export const makePopup = (layer: Layer | any, data: any) => {
         ),
       };
       break;
-    case "generators":
+    }
+    case "generators": {
+      let data = json as any; // TODO: Add generators type
       popup = {
         title: data["Name"],
         description: (
@@ -363,37 +389,40 @@ export const makePopup = (layer: Layer | any, data: any) => {
         ),
       };
       break;
-    case "hub":
+    }
+    case "hub": {
+      let data = json as HubTerminal;
       popup = {
-        title: data["Name"],
+        title: data.Name,
         description: (
           <div>
             <ul className="my-2 ml-6 list-disc [&>li]:mt-2">
-              <li>Current Active Schematic: {data["SchName"]}</li>
-              <li>Time till Drone Ship returns: {data["ShipReturn"]}</li>
+              <li>Current Active Schematic: {data.SchNam}</li>
+              <li>Time till Drone Ship returns: {data.ShipReturn}</li>
             </ul>
             <div className={"gap-1 flex flex-col"}>
-              <BoolBadge
-                bool={data["ShipDock"]}
-                text={"Is Drone Ship in HUB"}
-              />
+              <BoolBadge bool={data.ShipDock} text={"Is Drone Ship in HUB"} />
             </div>
           </div>
         ),
       };
       break;
-    case "artifacts":
-      switch (data["Name"]) {
-        case "Somersloop":
+    }
+    case "artifacts": {
+      let data = json as Artifact;
+      switch (data.ClassName) {
+        case Artifacts.Somersloop:
           popup_color = "347,82%,58%";
           break;
-        case "Mercer Sphere":
+        case Artifacts.MercerSphere:
           popup_color = "290,49%,64%";
           break;
       }
       popup.title = data["Name"];
       break;
+    }
     case "belts": {
+      let data = json as any; // TODO: Add belts type
       const color_popup = rgbToHsl(layer.props.getColor(data));
       const tier = +(
         data.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
@@ -416,6 +445,7 @@ export const makePopup = (layer: Layer | any, data: any) => {
       break;
     }
     case "pipes": {
+      let data = json as any; // TODO: Add pipes type
       const color_popup = rgbToHsl(layer.props.getColor(data));
       const tier = +(
         data.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
@@ -438,12 +468,32 @@ export const makePopup = (layer: Layer | any, data: any) => {
       };
       break;
     }
-    default:
+    case "storage_inv": {
+      let data = json as any; // TODO: Add storage inv type
+      popup = {
+        title: data["Name"],
+        description: (
+          <ul className="my-2 ml-6 list-disc [&>li]:mt-2">
+            {data["Inventory"].map((item: InventoryItem) => {
+              return (
+                <li key={item.Name + item.ClassName + item.Amount}>
+                  {item.Name} - {item.Amount}
+                </li>
+              );
+            })}
+          </ul>
+        ),
+      };
+      break;
+    }
+    default: {
+      let data = json as any;
       popup = {
         title: data.Name ?? data.ClassName ?? "Unknown",
         description: `ID: ${data["ID"]}`,
       };
       break;
+    }
   }
 
   if (original_text_color == text_color && text_color != popup_color)
@@ -486,7 +536,7 @@ export const makePopup = (layer: Layer | any, data: any) => {
           ) : (
             popup.description
           )}
-          {dev && <CardDescription>{data.ClassName}</CardDescription>}
+          {dev && <CardDescription>{json.ClassName}</CardDescription>}
         </CardContent>
       </div>
     </Card>,
