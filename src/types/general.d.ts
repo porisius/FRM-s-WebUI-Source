@@ -24,9 +24,9 @@ type InventoryItem = ClassObject &
   };
 
 interface Coordinates {
-  x: string;
-  y: string;
-  z: string;
+  x: number;
+  y: number;
+  z: number;
 }
 
 type CoordinatesWithRotation = Coordinates & {

@@ -33,6 +33,9 @@
       ],
       "@enums/*": [
         "src/types/enums/*"
+      ],
+      "@stores/*": [
+        "src/stores/*"
       ]
     },
     "target": "ES2017",

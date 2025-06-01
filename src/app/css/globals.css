@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+.scrollarea-child-target > :nth-child(2) > :first-child {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -310,6 +315,10 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+
+    :focus {
+        outline: none;
+    }
 }
 
 /*

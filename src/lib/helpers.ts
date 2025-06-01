@@ -113,3 +113,17 @@ export function hexToRgb(hex: string): [number, number, number] {
 
   return [r, g, b];
 }
+
+export function rgbaFloatToRGBA(color: {
+  R: number;
+  G: number;
+  B: number;
+  A: number;
+}): number[] {
+  const r = Math.round(color.R * 255);
+  const g = Math.round(color.G * 255);
+  const b = Math.round(color.B * 255);
+  const a = parseFloat(color.A.toFixed(2));
+
+  return [r, g, b, a];
+}

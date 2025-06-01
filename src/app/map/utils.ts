@@ -1,6 +1,7 @@
 import { normal, power_slugs } from "@public/images";
+import { BoundingBox, CoordinatesWithRotation } from "@/types/general";
 
-export function rotatePoint(
+function rotatePoint(
   [x, y]: [number, number],
   [cx, cy]: [number, number],
   angleDeg: number,
@@ -15,7 +16,29 @@ export function rotatePoint(
   return [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos];
 }
 
-export interface layerStuffType {
+function CalcBoundingBox({
+  BoundingBox,
+  location,
+}: {
+  BoundingBox: BoundingBox;
+  location: CoordinatesWithRotation;
+}) {
+  const bbox = BoundingBox;
+  const rotation = location.rotation - 90;
+
+  const corners: [number, number][] = [
+    [bbox.min.x, bbox.min.y * -1],
+    [bbox.max.x, bbox.min.y * -1],
+    [bbox.max.x, bbox.max.y * -1],
+    [bbox.min.x, bbox.max.y * -1],
+  ];
+
+  const center: [number, number] = [location.x, location.y * -1];
+
+  return corners.map((pt) => rotatePoint(pt, center, rotation));
+}
+
+interface layerStuffType {
   [key: string]: {
     data?: any;
     filters?: string[];
@@ -27,96 +50,96 @@ export interface layerStuffType {
   };
 }
 
-export const layerStuff: layerStuffType = {
+const layerStuff: layerStuffType = {
   artifacts: {
     icon: normal.artifacts.somersloop,
-    label: "Artifacts",
-    visible: false,
     id: "artifacts",
-    url: "getArtifacts",
+    label: "Artifacts",
+    url: "/getArtifacts",
+    visible: false,
   },
   belts: {
     icon: normal.buildings.conveyor_belt_mk_1,
-    label: "Belts",
-    visible: false,
     id: "belts",
-    url: "getBelts",
+    label: "Belts",
+    url: "/getBelts",
+    visible: true,
   },
   cables: {
     icon: normal.power,
-    label: "Cables",
-    visible: false,
     id: "cables",
-    url: "getCables",
+    label: "Cables",
+    url: "/getCables",
+    visible: true,
   },
   drone: {
     icon: normal.drones.drone,
-    label: "Drones",
-    visible: false,
     id: "drone",
-    url: "getDrone",
+    label: "Drones",
+    url: "/getDrone",
+    visible: true,
   },
   drone_station: {
     icon: normal.drones.drone_station,
-    label: "Drone Stations",
-    visible: false,
     id: "drone_station",
-    url: "getDroneStation",
+    label: "Drone Stations",
+    url: "/getDroneStation",
+    visible: true,
   },
   drop_pod: {
     icon: normal.drop_pod,
-    label: "Drop Pods",
-    visible: false,
     id: "drop_pod",
-    url: "getDropPod",
+    label: "Drop Pods",
+    url: "/getDropPod",
+    visible: false,
   },
   factory: {
     icon: normal.question_mark,
-    label: "Factory",
-    visible: false,
     id: "factory",
-    url: "getFactory",
+    label: "Factory",
+    url: "/getFactory",
+    visible: true,
   },
   generators: {
     icon: normal.power,
-    label: "Power Generators",
-    visible: false,
     id: "generators",
-    url: "getGenerators",
+    label: "Power Generators",
+    url: "/getGenerators",
+    visible: true,
   },
   hub: {
     icon: normal.hub,
-    label: "Hubs",
-    visible: false,
     id: "hub",
-    url: "getHUBTerminal",
+    label: "Hubs",
+    url: "/getHUBTerminal",
+    visible: true,
   },
   pipes: {
     icon: normal.buildings.pipeline_mk_1,
-    label: "Pipes",
-    visible: false,
     id: "pipes",
-    url: "getPipes",
+    label: "Pipes",
+    url: "/getPipes",
+    visible: true,
   },
   players: {
     icon: normal.player.alive,
-    label: "Players",
-    visible: false,
     id: "players",
-    url: "getPlayer",
+    label: "Players",
+    url: "/getPlayer",
+    visible: true,
   },
   radar: {
     icon: normal.radar_tower,
-    label: "Radar Towers",
-    visible: false,
     id: "radio_tower",
-    url: "getRadarTower",
+    label: "Radar Towers",
+    url: "/getRadarTower",
+    visible: true,
   },
   resource_node: {
     icon: normal.question_mark,
     id: "resource_node",
     label: "Resource Node",
-    url: "getResourceNode",
+    url: "/getResourceNode",
     visible: false,
   },
   // resource_well: {
@@ -124,55 +147,79 @@ export const layerStuff: layerStuffType = {
   //   label: "Resource Well",
   //   visible: false,
   //   id: "resource_well",
-  //   url: "getResourceWell",
+  //   url: "/getResourceWell",
   // },
   slugs: {
     icon: power_slugs.power_slug,
-    label: "Slug",
-    visible: false,
     id: "slugs",
-    url: "getPowerSlug",
+    label: "Slug",
+    url: "/getPowerSlug",
+    visible: false,
   },
   space_elevator: {
     icon: normal.space_elevator,
-    label: "Space Elevator",
-    visible: false,
     id: "space_elevator",
-    url: "getSpaceElevator",
+    label: "Space Elevator",
+    url: "/getSpaceElevator",
+    visible: true,
   },
-  train: {
-    icon: normal.vehicles.trains.train,
-    label: "Trains",
-    visible: false,
-    id: "train",
-    url: "getTrains",
-  },
-  train_station: {
-    icon: normal.vehicles.trains.train_station,
-    label: "Train Stations",
-    visible: false,
-    id: "train_station",
-    url: "getTrainStation",
-  },
-  truck_station: {
-    icon: normal.vehicles.trucks.truck_station,
-    label: "Truck Stations",
-    visible: false,
-    id: "truck_station",
-    url: "getTruckStation",
-  },
-  vehicles: {
-    icon: normal.vehicles.trucks.truck,
-    label: "Vehicles",
-    visible: false,
-    id: "vehicles",
-    url: "getVehicles",
+  splitter_merger: {
+    icon: normal.crate.crate_loot,
+    id: "splitter_merger",
+    label: "Splitter & Merger",
+    url: "/getSplitterMerger",
+    visible: true,
   },
   storage_inv: {
     icon: normal.crate.crate_loot,
-    label: "Storage Inv",
-    visible: false,
     id: "storage_inv",
-    url: "getStorageInv",
+    label: "Storage Inv",
+    url: "/getStorageInv",
+    visible: true,
+  },
+  train: {
+    icon: normal.vehicles.trains.train,
+    id: "train",
+    label: "Trains",
+    url: "/getTrains",
+    visible: true,
+  },
+  train_station: {
+    icon: normal.vehicles.trains.train_station,
+    id: "train_station",
+    label: "Train Stations",
+    url: "/getTrainStation",
+    visible: true,
+  },
+  truck_station: {
+    icon: normal.vehicles.trucks.truck_station,
+    id: "truck_station",
+    label: "Truck Stations",
+    url: "/getTruckStation",
+    visible: true,
+  },
+  vehicles: {
+    icon: normal.vehicles.trucks.truck,
+    id: "vehicles",
+    label: "Vehicles",
+    url: "/getVehicles",
+    visible: true,
+  },
+  train_rails: {
+    icon: normal.vehicles.trains.train,
+    id: "train_rails",
+    label: "Train Rails",
+    url: "/getTrainRails",
+    visible: true,
+  },
+  switches: {
+    icon: normal.power,
+    id: "switches",
+    label: "Switches",
+    url: "/getSwitches",
+    visible: true,
   },
 };
+
+export { rotatePoint, CalcBoundingBox, layerStuff };
+export type { layerStuffType };
