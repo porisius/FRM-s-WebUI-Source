@@ -34,8 +34,10 @@ type CoordinatesWithRotation = Coordinates & {
 };
 
 type BoundingBox = {
-  min: Coordinates;
-  max: Coordinates;
+  BoundingBox: {
+    min: Coordinates;
+    max: Coordinates;
+  };
 };
 
 type ColorSlot = {

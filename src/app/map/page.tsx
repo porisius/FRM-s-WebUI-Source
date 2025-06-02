@@ -21,6 +21,7 @@ import DeckGL, {
   IconLayer,
   LineLayer,
   OrthographicView,
+  PathLayer,
   PickingInfo,
   PolygonLayer,
 } from "deck.gl";
@@ -29,7 +30,14 @@ import { makePopup } from "@/components/map/popup";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { CalcBoundingBox, layerStuff, layerStuffType } from "../map/utils";
+import {
+  CalcBoundingBox,
+  degreesToRadians,
+  layerStuff,
+  layerStuffType,
+  Point,
+  rotatePoint,
+} from "../map/utils";
 import { adjustColorShades, hexToRgb, RGB, toHex6 } from "@/lib/helpers";
 import {
   Popover,
@@ -48,6 +56,17 @@ import { SpaceElevator } from "@/types/space-elevator";
 import axios from "axios";
 import { useSettingsStore } from "@stores/settings";
 import Chat from "@/components/chat";
+import {
+  BoundingBox,
+  CoordinatesWithRotation,
+  IDBoundingColorSlotBoxClassObject,
+  LocationWithRotation,
+} from "@/types/general";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -161,23 +180,16 @@ export default function MapPage() {
     return structuredClone(layerStuff);
   });
 
-  const [data, setData] = useState(() => {
-    const clone: layerStuffType = structuredClone(layerStuff);
-    for (let cloneKey in clone) {
-      clone[cloneKey]["data"] = [];
-    }
-    return clone;
-  });
-
   function MakeIconLayer(
     iconUrl: string,
     id: string,
+    visible: boolean,
     getIconFunc?: (d: any) => any,
   ) {
     return new IconLayer({
       autoHighlight: true,
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-      data: data[id].data,
+      data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
       getIcon: getIconFunc
         ? getIconFunc
         : (d: any) => ({
@@ -191,21 +203,23 @@ export default function MapPage() {
       id: id,
       pickable: true,
       updateTriggers: {
-        visible: nyaa[id].visible,
+        visible: visible,
       },
-      visible: nyaa[id].visible,
+      visible: visible,
     });
   }
 
   function MakePolygonLayer(
     id: string,
+    visible: boolean,
     getLineWidth: number,
-    getFillColor?: any,
-    getLineColor?: any,
+    getFillColor: any,
+    getLineColor: any,
+    getPolygon?: any,
   ) {
     return new PolygonLayer({
       autoHighlight: true,
-      data: data[id].data,
+      data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
       getFillColor: mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
         : getFillColor,
@@ -214,21 +228,22 @@ export default function MapPage() {
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
         : getLineColor,
       getLineWidth: getLineWidth,
-      getPolygon: (d) => CalcBoundingBox(d),
+      getPolygon: getPolygon ? getPolygon : (d: any) => CalcBoundingBox(d),
       highlightColor: [255, 255, 255, 20],
       id: id,
       lineWidthMinPixels: 1,
       pickable: true,
       positionFormat: "XY",
       updateTriggers: {
-        visible: nyaa[id].visible,
+        visible: visible,
       },
-      visible: nyaa[id].visible,
+      visible: visible,
     });
   }
 
   class IconPolygonLayer extends CompositeLayer<{
     id: string;
+    visible: boolean;
     iconUrl: string;
     getLineWidth: number;
     getFillColor?: any;
@@ -238,22 +253,21 @@ export default function MapPage() {
     renderLayers() {
       const {
         id,
+        visible,
         iconUrl,
         getIconFunc,
         getFillColor,
         getLineColor,
         getLineWidth,
       } = this.props;
-      const zoomedIn = this.context.viewport.zoom > -6;
 
-      const sharedData = data[id].data;
-      const isVisible = nyaa[id].visible;
+      const zoomedIn = this.context.viewport.zoom > -6;
 
       return [
         new IconLayer({
           autoHighlight: true,
           coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-          data: sharedData,
+          data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
           getIcon: getIconFunc
             ? getIconFunc
             : (d: any) => ({
@@ -267,13 +281,13 @@ export default function MapPage() {
           id: `${id}-icon`,
           pickable: true,
           updateTriggers: {
-            visible: isVisible && !zoomedIn,
+            visible: visible && !zoomedIn,
           },
-          visible: isVisible && !zoomedIn,
+          visible: visible && !zoomedIn,
         }),
         new PolygonLayer({
           autoHighlight: true,
-          data: sharedData,
+          data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
           getFillColor: mapUseInGameColors
             ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
             : getFillColor,
@@ -289,155 +303,404 @@ export default function MapPage() {
           pickable: true,
           positionFormat: "XY",
           updateTriggers: {
-            visible: isVisible && zoomedIn,
+            visible: visible && zoomedIn,
           },
-          visible: isVisible && zoomedIn,
+          visible: visible && zoomedIn,
         }),
       ];
     }
   }
 
-  const master = [
-    MakeIconLayer(power_slugs.power_slug, "slugs", (d: PowerSlugs) => ({
-      url:
-        {
-          BP_Crystal_C: power_slugs.power_slug_mk1,
-          BP_Crystal_mk2_C: power_slugs.power_slug_mk2,
-          BP_Crystal_mk3_C: power_slugs.power_slug_mk3,
-        }[d.ClassName as string] ?? misc.question_mark,
-      width: 70,
-      height: 70,
-    })),
-    MakeIconLayer(misc.drop_pod.drop_pod, "drop_pod", (d: DropPod) => ({
-      url: d.Looted ? misc.drop_pod.drop_pod_collected : misc.drop_pod.drop_pod,
-      width: 70,
-      height: 70,
-    })),
-
-    MakeIconLayer(artifacts.somersloop, "artifacts", (d: Artifact) => ({
-      height: 70,
-      url:
-        d.ClassName == Artifacts.Somersloop
-          ? artifacts.somersloop
-          : d.ClassName == Artifacts.MercerSphere
-            ? artifacts.mercer_sphere
-            : misc.question_mark,
-      width: 70,
-    })),
-
-    MakeIconLayer(misc.question_mark, "resource_node", (d: ResourceNode) => ({
-      url: d.ClassName
-        ? `${resources + d.ClassName}/${d.Purity.toLowerCase()}.png`
-        : misc.question_mark,
-      width: 70,
-      height: 70,
-    })),
-
-    new LineLayer({
-      pickable: true,
-      id: "cables",
-      data: data.cables.data,
-      getColor: [44, 117, 255],
-      getSourcePosition: (d) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d) => [d["location1"].x, d["location1"].y * -1],
-      getWidth: 2,
-      visible: nyaa.cables.visible,
-      updateTriggers: {
-        visible: nyaa.cables.visible,
+  function MakePathLayer(id: string, getColor: any, visible: boolean) {
+    return new PathLayer({
+      id: id,
+      data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
+      getPath: (d) => {
+        return d.SplineData.flatMap((point: CoordinatesWithRotation) => [
+          point.x,
+          point.y * -1,
+        ]);
       },
-    }),
-    new LineLayer({
-      id: "belts",
-      data: data.belts.data,
       getColor: mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
-        : (d: any) => {
+        : getColor,
+      positionFormat: "XY",
+      visible: visible,
+      updateTriggers: {
+        visible: visible,
+      },
+      getWidth: 100,
+      jointRounded: true,
+      capRounded: true,
+      pickable: true,
+      autoHighlight: true,
+    });
+  }
+
+  class BeltLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    renderLayers() {
+      const visible = nyaa["belts"].visible;
+
+      return [
+        MakePathLayer(
+          "belts",
+          (d: any) => {
             const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
             const tier = +(
               d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
             );
             return colors[tier - 1];
           },
-      getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
-      pickable: true,
-      getWidth: 2,
-      visible: nyaa.belts.visible,
-      updateTriggers: {
-        visible: nyaa.belts.visible,
-      },
-    }),
-    new LineLayer({
-      id: "pipes",
-      data: data.pipes.data,
-
-      getColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
-        : (d: any) => {
-            const colors = adjustColorShades([255, 204, 153], 1) as RGB[];
+          visible,
+        ),
+        MakePolygonLayer(
+          "belt_lifts",
+          visible,
+          20,
+          (d: any) => {
+            const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
             const tier = +(
               d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
             );
             return colors[tier - 1];
           },
-      getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
-      pickable: true,
-      getWidth: 2,
-      visible: nyaa.pipes.visible,
-      updateTriggers: {
-        visible: nyaa.pipes.visible,
-      },
-    }),
-    new LineLayer({
-      id: "train_rails",
-      data: data.train_rails.data,
-
-      getColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
-        : (d: any) => hexToRgb("#8839ef"),
-      getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
-      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
-      pickable: true,
-      getWidth: 2,
-      visible: nyaa.train_rails.visible,
-      updateTriggers: {
-        visible: nyaa.train_rails.visible,
-      },
-    }),
-
-    MakePolygonLayer(
-      "factory",
-      20,
-      mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
-        : (d: any) => {
-            if ((d["ClassName"] as string).includes("Smelter"))
-              return new Uint8Array(buildings.smelter.color);
-            if ((d["ClassName"] as string).includes("Assembler"))
-              return new Uint8Array(buildings.assembler.color);
-            if ((d["ClassName"] as string).includes("Constructor"))
-              return new Uint8Array(buildings.constructor.color);
-            if ((d["ClassName"] as string).includes("Manufacturer"))
-              return new Uint8Array(buildings.manufacturer.color);
-            if ((d["ClassName"] as string).includes("HadronCollider"))
-              return new Uint8Array(buildings.particle_accelerator.color);
-            if ((d["ClassName"] as string).includes("Packager"))
-              return new Uint8Array(buildings.packager.color);
-            if ((d["ClassName"] as string).includes("Refinery"))
-              return new Uint8Array(buildings.refinery.color);
-            if ((d["ClassName"] as string).includes("Converter"))
-              return new Uint8Array(buildings.converter.color);
-            if ((d["ClassName"] as string).includes("Foundry"))
-              return new Uint8Array(buildings.foundry.color);
-            return [100, 100, 100, 100];
+          (d: any) => {
+            const colors = adjustColorShades([153, 209, 219], 6) as RGB[];
+            const tier = +(
+              d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
+            );
+            return colors[tier];
           },
-      mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
+          (
+            d: IDBoundingColorSlotBoxClassObject &
+              BoundingBox &
+              LocationWithRotation,
+          ) => {
+            let lift = d;
+            let bbox = lift.BoundingBox;
+            let location = lift.location;
+            const rotation = -location.rotation % 360;
+            const corners: Point[] = [
+              [bbox.min.x, bbox.min.y * -1],
+              [bbox.max.x, bbox.min.y * -1],
+              [bbox.max.x, bbox.min.y * -1 - 20],
+              [bbox.max.x + 200, bbox.min.y * -1 - 20],
+
+              [bbox.max.x + 200, bbox.max.y * -1 + 20],
+              [bbox.max.x, bbox.max.y * -1 + 20],
+              [bbox.max.x, bbox.max.y * -1],
+              [bbox.min.x, bbox.max.y * -1],
+            ];
+
+            const center: Point = [location.x, location.y * -1];
+
+            const rotationInRadians = degreesToRadians(rotation + 90);
+
+            const rotatedCorners = corners.map((corner) =>
+              rotatePoint(corner, center, rotationInRadians),
+            );
+
+            return rotatedCorners;
+          },
+        ),
+        MakePolygonLayer(
+          "splitter_merger",
+          visible,
+          20,
+          (d: any) => {
+            const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
+            const classNames = [
+              "Build_ConveyorAttachmentMerger_C",
+              "Build_ConveyorAttachmentSplitter_C",
+              "Build_ConveyorAttachmentMergerPriority_C",
+              "Build_ConveyorAttachmentSplitterSmart_C",
+              "Build_ConveyorAttachmentSplitterProgrammable_C",
+            ];
+
+            return colors[classNames.indexOf(d.ClassName) ?? 5];
+          },
+          [41, 44, 60],
+          (
+            d: IDBoundingColorSlotBoxClassObject &
+              BoundingBox &
+              LocationWithRotation,
+          ) => {
+            let lift = d;
+            let bbox = lift.BoundingBox;
+            let location = lift.location;
+            const rotation = -location.rotation % 360;
+
+            let corners: Point[] = [
+              [bbox.min.x, bbox.min.y * -1],
+              [bbox.max.x, bbox.min.y * -1],
+              [bbox.max.x, bbox.max.y * -1],
+              [bbox.min.x, bbox.max.y * -1],
+            ];
+
+            if (d.ClassName.includes("Merger")) {
+              let west = [
+                [bbox.min.x + 20, bbox.min.y * -1],
+                [bbox.min.x + 20, bbox.min.y * -1 + 40],
+                [bbox.max.x - 20, bbox.min.y * -1 + 40],
+                [bbox.max.x - 20, bbox.min.y * -1],
+              ];
+              let north = [
+                [bbox.max.x, bbox.min.y * -1 - 20],
+                [bbox.max.x + 100, bbox.min.y * -1 - 20],
+                [bbox.max.x + 100, bbox.max.y * -1 + 20],
+                [bbox.max.x, bbox.max.y * -1 + 20],
+              ];
+              let east = [
+                [bbox.max.x - 20, bbox.max.y * -1],
+                [bbox.max.x - 20, bbox.max.y * -1 - 40],
+                [bbox.min.x + 20, bbox.max.y * -1 - 40],
+                [bbox.min.x + 20, bbox.max.y * -1],
+              ];
+              let south = [
+                [bbox.min.x, bbox.max.y * -1 + 20],
+                [bbox.min.x - 40, bbox.max.y * -1 + 20],
+                [bbox.min.x - 40, bbox.min.y * -1 - 20],
+                [bbox.min.x, bbox.min.y * -1 - 20],
+              ];
+
+              corners = [
+                ...west,
+                [bbox.max.x, bbox.min.y * -1],
+                ...north,
+                [bbox.max.x, bbox.max.y * -1],
+                ...east,
+                [bbox.min.x, bbox.max.y * -1],
+                ...south,
+                [bbox.min.x, bbox.min.y * -1],
+              ];
+            } else if (d.ClassName.includes("Splitter")) {
+              let west = [
+                [bbox.min.x + 20, bbox.min.y * -1],
+                [bbox.min.x + 20, bbox.min.y * -1 + 100],
+                [bbox.max.x - 20, bbox.min.y * -1 + 100],
+                [bbox.max.x - 20, bbox.min.y * -1],
+              ];
+              let north = [
+                [bbox.max.x, bbox.min.y * -1 - 20],
+                [bbox.max.x + 40, bbox.min.y * -1 - 20],
+                [bbox.max.x + 40, bbox.max.y * -1 + 20],
+                [bbox.max.x, bbox.max.y * -1 + 20],
+              ];
+              let east = [
+                [bbox.max.x - 20, bbox.max.y * -1],
+                [bbox.max.x - 20, bbox.max.y * -1 - 100],
+                [bbox.min.x + 20, bbox.max.y * -1 - 100],
+                [bbox.min.x + 20, bbox.max.y * -1],
+              ];
+              let south = [
+                [bbox.min.x, bbox.max.y * -1 + 20],
+                [bbox.min.x - 100, bbox.max.y * -1 + 20],
+                [bbox.min.x - 100, bbox.min.y * -1 - 20],
+                [bbox.min.x, bbox.min.y * -1 - 20],
+              ];
+
+              corners = [
+                ...west,
+                [bbox.max.x, bbox.min.y * -1],
+                ...north,
+                [bbox.max.x, bbox.max.y * -1],
+                ...east,
+                [bbox.min.x, bbox.max.y * -1],
+                ...south,
+                [bbox.min.x, bbox.min.y * -1],
+              ];
+            }
+
+            const center: Point = [location.x, location.y * -1];
+
+            const rotationInRadians = degreesToRadians(rotation + 90);
+
+            const rotatedCorners = corners.map((corner) =>
+              rotatePoint(corner, center, rotationInRadians),
+            );
+
+            return rotatedCorners;
+          },
+        ),
+      ];
+    }
+  }
+
+  class TrainLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    renderLayers() {
+      const visible = nyaa["train"].visible;
+
+      return [
+        MakePathLayer("train_rails", (d: any) => hexToRgb("#8839ef"), visible),
+        new IconPolygonLayer({
+          id: "train_station",
+          visible: visible,
+          iconUrl: misc.vehicles.trains.train_station,
+          getLineWidth: 20,
+          getFillColor: hexToRgb("#8aadf4"),
+          getLineColor: [41, 44, 60],
+        }),
+        MakeIconLayer(misc.vehicles.trains.train, "train", visible),
+      ];
+    }
+  }
+
+  class VehicleLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    renderLayers() {
+      const visible = nyaa["vehicles"].visible;
+
+      return [
+        new IconPolygonLayer({
+          id: "truck_station",
+          visible: visible,
+          iconUrl: misc.vehicles.trucks.truck_station,
+          getLineWidth: 20,
+          getFillColor: hexToRgb("#91d7e3"),
+          getLineColor: [41, 44, 60],
+        }),
+        MakeIconLayer(
+          misc.vehicles.trucks.truck,
+          "vehicles",
+          visible,
+          (d: Vehicles) => ({
+            height: 70,
+            url:
+              {
+                BP_Golfcart_C: misc.vehicles.factory_cart,
+                BP_Tractor_C: misc.vehicles.tractor,
+                BP_Truck_C: misc.vehicles.trucks.truck,
+              }[d.ClassName as string] ?? misc.vehicles.explorer,
+            width: 70,
+          }),
+        ),
+      ];
+    }
+  }
+
+  class DroneLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    renderLayers() {
+      const visible = nyaa["drone"].visible;
+
+      return [
+        new IconPolygonLayer({
+          id: "drone_station",
+          visible: visible,
+          iconUrl: misc.drones.drone_station,
+          getLineWidth: 20,
+          getFillColor: hexToRgb("#b7bdf8"),
+          getLineColor: [41, 44, 60],
+        }),
+        MakeIconLayer(misc.drones.drone, "drone", visible),
+      ];
+    }
+  }
+
+  const master = [
+    MakeIconLayer(
+      power_slugs.power_slug,
+      "slugs",
+      nyaa["slugs"].visible,
+      (d: PowerSlugs) => ({
+        url:
+          {
+            BP_Crystal_C: power_slugs.power_slug_mk1,
+            BP_Crystal_mk2_C: power_slugs.power_slug_mk2,
+            BP_Crystal_mk3_C: power_slugs.power_slug_mk3,
+          }[d.ClassName as string] ?? misc.question_mark,
+        width: 70,
+        height: 70,
+      }),
     ),
+    MakeIconLayer(
+      misc.drop_pod.drop_pod,
+      "drop_pod",
+      nyaa["drop_pod"].visible,
+      (d: DropPod) => ({
+        url: d.Looted
+          ? misc.drop_pod.drop_pod_collected
+          : misc.drop_pod.drop_pod,
+        width: 70,
+        height: 70,
+      }),
+    ),
+
+    MakeIconLayer(
+      artifacts.somersloop,
+      "artifacts",
+      nyaa["artifacts"].visible,
+      (d: Artifact) => ({
+        height: 70,
+        url:
+          d.ClassName == Artifacts.Somersloop
+            ? artifacts.somersloop
+            : d.ClassName == Artifacts.MercerSphere
+              ? artifacts.mercer_sphere
+              : misc.question_mark,
+        width: 70,
+      }),
+    ),
+
+    MakeIconLayer(
+      misc.question_mark,
+      "resource_node",
+      nyaa["resource_node"].visible,
+      (d: ResourceNode) => ({
+        url: d.ClassName
+          ? `${resources + d.ClassName}/${d.Purity.toLowerCase()}.png`
+          : misc.question_mark,
+        width: 70,
+        height: 70,
+      }),
+    ),
+
+    new LineLayer({
+      pickable: true,
+      id: "cables",
+      data: nyaa["cables"].visible
+        ? baseURL + nyaa["cables"].url + `#${dataVersion}`
+        : [],
+      getColor: [44, 117, 255],
+      getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
+      getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
+      getWidth: 2,
+      visible: nyaa.cables.visible,
+      updateTriggers: {
+        visible: nyaa.cables.visible,
+      },
+    }),
+
+    new BeltLayer({ uwu: "uwu", ThisIsForUpdating: () => {} }),
+    new TrainLayer({ uwu: "uwu", ThisIsForUpdating: () => {} }),
+    new VehicleLayer({ uwu: "uwu", ThisIsForUpdating: () => {} }),
+    new DroneLayer({ uwu: "uwu", ThisIsForUpdating: () => {} }),
+
+    MakePathLayer(
+      "pipes",
+      (d: any) => {
+        const colors = adjustColorShades([255, 204, 153], 1) as RGB[];
+        const tier = +(
+          d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
+        );
+        return colors[tier - 1];
+      },
+      nyaa["pipes"].visible,
+    ),
+
     MakePolygonLayer(
       "generators",
+      nyaa["generators"].visible,
       20,
       mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
@@ -462,6 +725,7 @@ export default function MapPage() {
     ),
     MakePolygonLayer(
       "storage_inv",
+      nyaa["storage_inv"].visible,
       20,
       mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
@@ -470,29 +734,9 @@ export default function MapPage() {
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
         : [41, 44, 60],
     ),
-    MakePolygonLayer(
-      "splitter_merger",
-      20,
-      mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
-        : (d: any) => {
-            const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
-            const classNames = [
-              "Build_ConveyorAttachmentMerger_C",
-              "Build_ConveyorAttachmentSplitter_C",
-              "Build_ConveyorAttachmentMergerPriority_C",
-              "Build_ConveyorAttachmentSplitterSmart_C",
-              "Build_ConveyorAttachmentSplitterProgrammable_C",
-            ];
-
-            return colors[classNames.indexOf(d.ClassName) ?? 5];
-          },
-      mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    ), // TODO: Add Popup
     new IconPolygonLayer({
       id: "space_elevator",
+      visible: nyaa["space_elevator"].visible,
       iconUrl: misc.space_elevator.space_elevator,
       getLineWidth: 20,
       getFillColor: mapUseInGameColors
@@ -510,35 +754,10 @@ export default function MapPage() {
         width: 70,
       }),
     }),
-    new IconPolygonLayer({
-      id: "truck_station",
-      iconUrl: misc.vehicles.trucks.truck_station,
-      getLineWidth: 20,
-      getFillColor: (d: any) => hexToRgb("#91d7e3"),
-      getLineColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    }),
-    new IconPolygonLayer({
-      id: "train_station",
-      iconUrl: misc.vehicles.trains.train_station,
-      getLineWidth: 20,
-      getFillColor: (d: any) => hexToRgb("#8aadf4"),
-      getLineColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    }),
-    new IconPolygonLayer({
-      id: "drone_station",
-      iconUrl: misc.drones.drone_station,
-      getLineWidth: 20,
-      getFillColor: (d: any) => hexToRgb("#b7bdf8"),
-      getLineColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    }),
+
     new IconPolygonLayer({
       id: "radar",
+      visible: nyaa["radar"].visible,
       iconUrl: misc.radar_tower,
       getLineWidth: 20,
       getFillColor: (d: any) => hexToRgb("#f0c6c6"),
@@ -548,6 +767,7 @@ export default function MapPage() {
     }),
     new IconPolygonLayer({
       id: "switches",
+      visible: nyaa["switches"].visible,
       iconUrl: misc.power,
       getLineWidth: 20,
       getFillColor: (d: any) => hexToRgb("#f0c6c6"),
@@ -556,67 +776,60 @@ export default function MapPage() {
         : [41, 44, 60],
     }),
 
-    MakeIconLayer(misc.vehicles.trucks.truck, "vehicles", (d: Vehicles) => ({
-      height: 70,
-      url:
-        {
-          BP_Golfcart_C: misc.vehicles.factory_cart,
-          BP_Tractor_C: misc.vehicles.tractor,
-          BP_Truck_C: misc.vehicles.trucks.truck,
-        }[d.ClassName as string] ?? misc.vehicles.explorer,
-      width: 70,
-    })),
-    MakeIconLayer(misc.drones.drone, "drone"),
-    MakeIconLayer(misc.vehicles.trains.train, "train"),
-    MakeIconLayer(misc.player.alive, "players", (d: Player) => ({
-      url: d.Dead
-        ? misc.player.player_dead
-        : (d.Online as boolean)
-          ? misc.player.alive
-          : misc.player.player_offline,
-      width: 70,
-      height: 70,
-    })),
-    MakeIconLayer(misc.hub, "hub"),
+    MakeIconLayer(
+      misc.player.alive,
+      "players",
+      nyaa["players"].visible,
+      (d: Player) => ({
+        url: d.Dead
+          ? misc.player.player_dead
+          : (d.Online as boolean)
+            ? misc.player.alive
+            : misc.player.player_offline,
+        width: 70,
+        height: 70,
+      }),
+    ),
+    MakeIconLayer(misc.hub, "hub", nyaa["hub"].visible),
   ];
 
-  useEffect(() => {
-    const nextUpdate = setInterval(() => {
-      if (!_hasHydrated) return null;
-      Object.entries(data).forEach(async ([key, endpoint]) => {
-        const nyaaEntry = nyaa[key];
-        if (!nyaaEntry?.visible) return;
-
-        const rawData = (await axios.get(baseURL + nyaaEntry.url)).data;
-
-        const filteredData = rawData.filter((item: any) => {
-          if (
-            new_nyaa_filters.length === 0 ||
-            !new_nyaa_filters.find((filter) => filter.includes(key))
-          )
-            return true;
-
-          const extra =
-            item.Purity ??
-            slugTier[item.ClassName as keyof typeof slugTier] ??
-            "NoExtra";
-          const filterKey = `${key}-${item.ClassName}-${extra}`;
-
-          return new_nyaa_filters.includes(filterKey);
-        });
-
-        setData((prevData) => ({
-          ...prevData,
-          [key]: {
-            ...endpoint,
-            data: filteredData,
-          },
-        }));
-      });
-    }, mapFetchSpeed);
-
-    return () => clearInterval(nextUpdate);
-  }, [nyaa, new_nyaa_filters, _hasHydrated]);
+  // useEffect(() => {
+  //   const nextUpdate = setInterval(() => {
+  //     if (!_hasHydrated) return null;
+  //     Object.entries(data).forEach(async ([key, endpoint]) => {
+  //       const nyaaEntry = nyaa[key];
+  //       if (!nyaaEntry?.visible) return;
+  //
+  //       const rawData = (await axios.get(baseURL + nyaaEntry.url)).data;
+  //
+  //       const filteredData = rawData.filter((item: any) => {
+  //         if (
+  //           new_nyaa_filters.length === 0 ||
+  //           !new_nyaa_filters.find((filter) => filter.includes(key))
+  //         )
+  //           return true;
+  //
+  //         const extra =
+  //           item.Purity ??
+  //           slugTier[item.ClassName as keyof typeof slugTier] ??
+  //           "NoExtra";
+  //         const filterKey = `${key}-${item.ClassName}-${extra}`;
+  //
+  //         return new_nyaa_filters.includes(filterKey);
+  //       });
+  //
+  //       setData((prevData) => ({
+  //         ...prevData,
+  //         [key]: {
+  //           ...endpoint,
+  //           data: filteredData,
+  //         },
+  //       }));
+  //     });
+  //   }, mapFetchSpeed);
+  //
+  //   return () => clearInterval(nextUpdate);
+  // }, [nyaa, new_nyaa_filters, _hasHydrated]);
 
   const [filterElement, setFilterElement] = useState<any>(null);
 
@@ -784,32 +997,40 @@ export default function MapPage() {
           <ScrollArea className={"h-[90vh]"} type={"scroll"}>
             <SheetHeader>
               <SheetTitle>Layers & Filters</SheetTitle>
-              <div className={"gap-2 grid grid-cols-2 size-full"}>
-                {Object.entries(nyaa).map(([key, value], index) => {
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 bg-card rounded-2xl shadow-inner max-h-[80vh] overflow-y-auto border">
+                {Object.entries(nyaa).map(([key, value]) => {
                   // @ts-ignore
+                  if (layerStuff[key].with != null) return null;
                   const uwuLayer = layerStuff[key];
                   return (
-                    <Toggle
-                      key={key}
-                      defaultPressed={value.visible}
-                      onPressedChange={(pressed) => {
-                        value.visible = pressed;
-                        setUwU(nyaa);
-                      }}
-                      pressed={value.visible}
-                      className={
-                        "bg-[hsla(29,75%,65%,0.5)] border border-[hsl(29,75%,65%)] data-[state=on]:bg-[hsla(29,75%,65%,0.7)] hover:bg-[hsla(29,75%,65%,0.6)] w-full inline-flex gap-1 text-white"
-                      }
-                    >
-                      <Avatar className={"size-[30px]"}>
-                        <AvatarImage src={uwuLayer.icon} />
-                        <AvatarFallback>{key}</AvatarFallback>
-                      </Avatar>
-                      <p>{uwuLayer.label}</p>
-                    </Toggle>
+                    <Tooltip key={key}>
+                      <TooltipTrigger>
+                        <Toggle
+                          defaultPressed={value.visible}
+                          onPressedChange={(pressed) => {
+                            value.visible = pressed;
+                            setUwU(nyaa);
+                          }}
+                          pressed={value.visible}
+                          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl border border-[hsl(29,75%,65%)] data-[state=on]:bg-[hsla(29,75%,65%,0.2)] hover:bg-[hsla(29,75%,65%,0.1)] p-5"
+                        >
+                          <Avatar className="size-8">
+                            <AvatarImage src={uwuLayer.icon} />
+                            <AvatarFallback>
+                              {key.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          {/*<p className="truncate">{uwuLayer.label}</p>*/}
+                        </Toggle>
+                      </TooltipTrigger>
+                      <TooltipContent className={"bg-card text-primary border"}>
+                        <p>{uwuLayer.label}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 })}
               </div>
+
               <Separator className={"my-[15px]"} />
 
               <div className={"gap-2 flex-col flex w-full"}>
