@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 
-import { useSettingsStore } from "@stores/settings";
+import { useSettingsStore } from "@/stores//settings";
 import axios from "axios";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";

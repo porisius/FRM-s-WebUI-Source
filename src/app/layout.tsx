@@ -1,39 +1,37 @@
-import type { Metadata } from "next";
+import type {Metadata} from "next";
 import "./css/globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import {ThemeProvider} from "@/components/theme-provider";
 import Navigation from "@/components/navigation";
 import React from "react";
-import { Inter } from "next/font/google";
+import {Inter} from "next/font/google";
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-custom-font",
+    subsets: ["latin"],
+    variable: "--font-custom-font",
 });
 
 export const metadata: Metadata = {
-  title: "Ficsit Remote Monitoring",
-  description: "Monitor your factory remotely!",
-  icons: "/favicon.png",
+    title: "Ficsit Remote Monitoring",
+    description: "Monitor your factory remotely!",
+    icons: "/favicon.png",
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: Readonly<{
-  children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" suppressHydrationWarning className={inter.className}>
-      <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Navigation />
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+    return <html lang="en" suppressHydrationWarning className={inter.className}>
+    <body>
+    <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem
+        disableTransitionOnChange
+    >
+        <Navigation/>
+        {children}
+    </ThemeProvider>
+    </body>
+    </html>;
 }

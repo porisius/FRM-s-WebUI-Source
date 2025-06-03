@@ -1,13 +1,13 @@
 import type {
+  BoundingBox,
   ClassObject,
+  ColorSlot,
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
   InventoryItem,
+  LocationWithRotation,
   PowerInfo,
-  BoundingBox,
-  ColorSlot,
 } from "./general";
 import {
   TrainDockingStatus,

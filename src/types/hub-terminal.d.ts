@@ -1,11 +1,11 @@
 import type {
   Features,
-  LocationWithRotation,
+  IDBoundingColorSlotBoxClassObject,
   IDClassObject,
   InventoryItem,
-  IDBoundingColorSlotBoxClassObject,
+  LocationWithRotation,
 } from "./general";
-import type { Building } from "@enums/building";
+import type { Building } from "@/enums//building";
 import type { RecipeObject } from "./recipe";
 
 type HubTerminalActiveMilestone = IDClassObject & {

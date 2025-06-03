@@ -1,8 +1,8 @@
 import type {
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
+  LocationWithRotation,
 } from "./general";
 
 type PowerSlug = IDClassObject &

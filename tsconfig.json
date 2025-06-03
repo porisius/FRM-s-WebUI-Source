@@ -25,21 +25,21 @@
       "@/*": [
         "src/*"
       ],
-      "@public/*": [
+      "@/public/*": [
         "public/*"
       ],
-      "@types/*": [
+      "@/types/*": [
         "src/types/*"
       ],
-      "@enums/*": [
+      "@/enums/*": [
         "src/types/enums/*"
       ],
-      "@stores/*": [
+      "@/stores/*": [
         "src/stores/*"
       ]
     },
     "target": "ES2017",
-    "baseUrl": "./"
+    "baseUrl": "."
   },
   "include": [
     "**/*.ts",

@@ -1,8 +1,8 @@
 import type {
   Features,
-  LocationWithRotation,
   IDClassObject,
   InventoryItem,
+  LocationWithRotation,
   PowerInfo,
 } from "./general";
 import type { VehicleType } from "@/types/enums/vehicle";

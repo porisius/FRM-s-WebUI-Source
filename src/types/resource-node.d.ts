@@ -1,11 +1,11 @@
 import type {
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
+  LocationWithRotation,
 } from "./general";
-import { ResourceNodePurity, ResourceNodePurityEnum } from "@enums/resource";
-import { ItemType } from "@enums/item-type";
+import { ResourceNodePurity, ResourceNodePurityEnum } from "@/enums//resource";
+import { ItemType } from "@/enums//item-type";
 
 type ResourceNode = IDClassObject &
   LocationWithRotation & {

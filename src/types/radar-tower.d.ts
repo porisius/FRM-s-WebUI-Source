@@ -1,11 +1,11 @@
 import type {
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDBoundingColorSlotBoxClassObject,
   Item,
+  LocationWithRotation,
 } from "./general";
-import type { Building } from "@enums/building";
+import type { Building } from "@/enums//building";
 import type { ResourceNode } from "./resource-node";
 
 type RadarTower = IDBoundingColorSlotBoxClassObject<Building.RadarTower> &

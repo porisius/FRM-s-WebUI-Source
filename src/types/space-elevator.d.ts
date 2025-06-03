@@ -1,10 +1,10 @@
 import type {
+  ClassObject,
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
   InventoryItem,
-  ClassObject,
+  LocationWithRotation,
 } from "./general";
 import type { Building } from "@/types/enums/building";
 

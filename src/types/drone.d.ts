@@ -1,10 +1,10 @@
 import type {
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
-  PowerInfo,
   InventoryItem,
+  LocationWithRotation,
+  PowerInfo,
 } from "./general";
 
 type Drone = IDClassObject &

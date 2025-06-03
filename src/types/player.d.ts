@@ -1,9 +1,9 @@
 import type {
   Features,
   FeaturesProperty,
-  LocationWithRotation,
   IDClassObject,
   InventoryItem,
+  LocationWithRotation,
 } from "./general";
 
 type Player = IDClassObject<"Char_Player_C"> &
