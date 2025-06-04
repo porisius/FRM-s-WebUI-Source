@@ -15,6 +15,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "prebuild": "bun run tools/minify.ts src/lib/polygons/base src/lib/polygons/minified",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -73,7 +74,8 @@
     "eslint-config-next": "^15.3.3",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
-    "tw-animate-css": "^1.3.3",
+    "terser": "^5.40.0",
+    "tw-animate-css": "^1.3.4",
     "typescript": "^5.8.3"
   },
   "overrides": {

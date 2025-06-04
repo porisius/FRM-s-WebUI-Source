@@ -2,21 +2,35 @@ import {normal, power_slugs} from "@/public/images";
 
 type Point = number[] | [number, number];
 
-function rotatePoint(point: Point, center: Point, angleRad: number): Point {
+function rotatePoint(point: Point, center: Point, angle: number): Point {
     const [px, py] = point;
     const [cx, cy] = center;
 
-    const tx = px - cx;
-    const ty = py - cy;
+    const dx = px - cx;
+    const dy = py - cy;
 
-    const cosA = Math.cos(angleRad);
-    const sinA = Math.sin(angleRad);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
 
-    const rx = tx * cosA - ty * sinA;
-    const ry = tx * sinA + ty * cosA;
-
-    return [rx + cx, ry + cy];
+    return [
+        cx + dx * cos - dy * sin,
+        cy + dx * sin + dy * cos,
+    ];
 }
+
+function scalePoint(point: Point, center: Point, scale: number): Point {
+    const [px, py] = point;
+    const [cx, cy] = center;
+
+    const dx = px - cx;
+    const dy = py - cy;
+
+    return [
+        cx + dx * scale,
+        cy + dy * scale,
+    ];
+}
+
 
 function degreesToRadians(deg: number): number {
     return (deg * Math.PI) / 180;
@@ -40,6 +54,58 @@ function CalcBoundingBox({BoundingBox, location}: any): Point[] {
         rotatePoint(corner, center, rotationInRadians),
     );
 }
+
+function generateArc(
+    start: [number, number],
+    end: [number, number],
+    angleDegrees: number = 60,
+    segments: number = 50
+): [number, number][] {
+    const [x1, y1] = start;
+    const [x2, y2] = end;
+
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const chordLength = Math.hypot(dx, dy);
+
+    const angleRad = (angleDegrees * Math.PI) / 180;
+
+    // Radius from chord and angle
+    const radius = chordLength / (2 * Math.sin(angleRad / 2));
+
+    // Midpoint to center distance along perpendicular
+    const centerOffset = Math.sqrt(radius ** 2 - (chordLength / 2) ** 2);
+
+    // Perpendicular direction
+    const perpX = -dy / chordLength;
+    const perpY = dx / chordLength;
+
+    const cx = mx + perpX * centerOffset;
+    const cy = my + perpY * centerOffset;
+
+    const angle1 = Math.atan2(y1 - cy, x1 - cx);
+    const angle2 = Math.atan2(y2 - cy, x2 - cx);
+
+    // Ensure shortest direction
+    let startAngle = angle1;
+    let endAngle = angle2;
+    if (endAngle < startAngle) endAngle += 2 * Math.PI;
+
+    const points: [number, number][] = [];
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const angle = startAngle + (endAngle - startAngle) * t;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        points.push([x, y]);
+    }
+
+    return points;
+}
+
 
 interface layerStuffType {
     [key: string]: {
@@ -165,6 +231,14 @@ const layerStuff: layerStuffType = {
         visible: true,
         with: "hypertubes",
     },
+    hypertube_junctions: {
+        icon: normal.question_mark,
+        id: "hypertube_junctions",
+        label: "Hypertube Junctions",
+        url: "/getHyperJunctions",
+        visible: true,
+        with: "hypertubes",
+    },
     players: {
         icon: normal.player.alive,
         id: "players",
@@ -267,6 +341,6 @@ const layerStuff: layerStuffType = {
     },
 };
 
-export {rotatePoint, CalcBoundingBox, layerStuff, degreesToRadians};
+export {rotatePoint, CalcBoundingBox, layerStuff, degreesToRadians, generateArc, scalePoint};
 export type {Point};
 export type {layerStuffType};

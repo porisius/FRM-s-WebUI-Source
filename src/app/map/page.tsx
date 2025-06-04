@@ -12,7 +12,7 @@ import {makePopup} from "@/components/map/popup";
 import {Toggle} from "@/components/ui/toggle";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Separator} from "@/components/ui/separator";
-import {CalcBoundingBox, degreesToRadians, layerStuff, Point, rotatePoint,} from "../map/utils";
+import {CalcBoundingBox, degreesToRadians, layerStuff, Point, rotatePoint, scalePoint,} from "../map/utils";
 import {adjustColorShades, hexToRgb, RGB, toHex6} from "@/lib/helpers";
 import {Popover, PopoverContent, PopoverTrigger,} from "@/components/ui/popover";
 import {classNameColors, purityColors} from "@/lib/constants";
@@ -30,6 +30,7 @@ import Chat from "@/components/chat";
 import {BoundingBox, CoordinatesWithRotation, IDBoundingColorSlotBoxClassObject, LocationWithRotation,} from "@/types/general";
 import {Tooltip, TooltipContent, TooltipTrigger,} from "@/components/ui/tooltip";
 import {DataFilterExtension} from "@deck.gl/extensions";
+import {hypertube_junction, hypertube_T} from "@/lib/polygons/base/hypertube";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -635,6 +636,55 @@ export default function MapPage() {
                         return corners.map(corner =>
                             rotatePoint(corner, center, rotationInRadians),
                         );
+                    },
+                ), MakePolygonLayer(
+                    "hypertube_junctions",
+                    visible,
+                    20,
+                    () => [255, 100, 153],
+                    () => adjustColorShades([255, 100, 153], 6)[6],
+                    (
+                        d: IDBoundingColorSlotBoxClassObject &
+                            BoundingBox &
+                            LocationWithRotation,
+                    ) => {
+                        let junction = d;
+                        let bbox = junction.BoundingBox;
+                        let location = junction.location;
+                        const rotation = -location.rotation % 360;
+
+                        let polygonScaled: Point[]
+                        let center: Point
+                        let rotationInRadians
+                        if (junction.ClassName === "Build_HypertubeTJunction_C") {
+                            const scaleFactor = 2;
+                            center = [location.x, -location.y];
+                            rotationInRadians = degreesToRadians(rotation);
+
+                            const polygonPositioned: Point[] = hypertube_T.map((point: Point) => [
+                                location.x + point[0] - 50,
+                                -location.y + point[1]
+                            ]);
+
+                            const polygonFlipped: Point[] = polygonPositioned.map(p => [
+                                2 * center[0] - p[0],
+                                p[1],
+                            ]);
+
+                            polygonScaled = polygonFlipped.map(p => scalePoint(p, center, scaleFactor));
+                        } else {
+                            const scaleFactor = .8;
+                            center = [location.x, -location.y - 18];
+                            rotationInRadians = degreesToRadians(rotation + 270);
+
+                            const polygonPositioned: Point[] = hypertube_junction.map((point: Point) => [
+                                location.x + point[0],
+                                -location.y + point[1]
+                            ]);
+
+                            polygonScaled = polygonPositioned.map(p => scalePoint(p, center, scaleFactor));
+                        }
+                        return polygonScaled.map(p => rotatePoint(p, center, rotationInRadians));
                     },
                 ),
             ];
