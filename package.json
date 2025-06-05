@@ -15,7 +15,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "prebuild": "bun run tools/minify.ts src/lib/polygons/base src/lib/polygons/minified",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -30,7 +30,7 @@ import Chat from "@/components/chat";
 import {BoundingBox, CoordinatesWithRotation, IDBoundingColorSlotBoxClassObject, LocationWithRotation,} from "@/types/general";
 import {Tooltip, TooltipContent, TooltipTrigger,} from "@/components/ui/tooltip";
 import {DataFilterExtension} from "@deck.gl/extensions";
-import {hypertube_junction, hypertube_T} from "@/lib/polygons/base/hypertube";
+import {hypertube_junction, hypertube_T} from "@/lib/polygons/hypertube";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 

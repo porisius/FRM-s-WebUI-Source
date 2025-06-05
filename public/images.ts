@@ -1,7 +1,7 @@
 /**
  *Images for the map
  **/
-export const map = "img/map.png";
+export const map = "img/map.avif";
 
 export const power_slugs = {
   power_slug_mk1: "markers/slugs/power_slug_mk1.png",
