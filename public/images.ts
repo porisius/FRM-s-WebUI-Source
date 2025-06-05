@@ -1,123 +1,123 @@
 /**
  *Images for the map
  **/
-export const map = "img/map.avif";
+export const map = "map.avif";
 
 export const power_slugs = {
-  power_slug_mk1: "markers/slugs/power_slug_mk1.png",
-  power_slug_mk2: "markers/slugs/power_slug_mk2.png",
-  power_slug_mk3: "markers/slugs/power_slug_mk3.png",
-  power_slug: "markers/normal/power_slug.png",
+  power_slug_mk1: "markers/slugs/power_slug_mk1.avif",
+  power_slug_mk2: "markers/slugs/power_slug_mk2.avif",
+  power_slug_mk3: "markers/slugs/power_slug_mk3.avif",
+  power_slug: "markers/normal/power_slug.avif",
 };
 
 export const misc = {
-  beacon: "markers/misc/beacon.png",
+  beacon: "markers/misc/beacon.avif",
   crate: {
-    crate_death: "markers/misc/create_death.png",
-    crate_loot: "markers/misc/crate_loot.png",
+    crate_death: "markers/misc/create_death.avif",
+    crate_loot: "markers/misc/crate_loot.avif",
   },
   drones: {
-    drone: "markers/misc/drone.png",
-    drone_station: "markers/misc/drone_station.png",
+    drone: "markers/misc/drone.avif",
+    drone_station: "markers/misc/drone_station.avif",
   },
   drop_pod: {
-    drop_pod: "markers/misc/drop_pod.png",
-    drop_pod_collected: "markers/misc/drop_pod_collected.png",
+    drop_pod: "markers/misc/drop_pod.avif",
+    drop_pod_collected: "markers/misc/drop_pod_collected.avif",
   },
-  hub: "markers/misc/hub.png",
+  hub: "markers/misc/hub.avif",
   player: {
-    alive: "markers/misc/player.png",
-    player_dead: "markers/misc/player_dead.png",
-    player_offline: "markers/misc/player_offline.png",
+    alive: "markers/misc/player.avif",
+    player_dead: "markers/misc/player_dead.avif",
+    player_offline: "markers/misc/player_offline.avif",
   },
   portal: {
-    portal: "markers/misc/portal.png",
-    portal_satellite: "markers/misc/portal_satellite.png",
+    portal: "markers/misc/portal.avif",
+    portal_satellite: "markers/misc/portal_satellite.avif",
   },
-  power: "markers/misc/power.png",
-  question_mark: "markers/misc/question_mark.png",
-  radar_tower: "markers/misc/radar_tower.png",
-  radiation: "markers/misc/radiation.png",
-  recycle: "markers/misc/recycle.png",
+  power: "markers/misc/power.avif",
+  question_mark: "markers/misc/question_mark.avif",
+  radar_tower: "markers/misc/radar_tower.avif",
+  radiation: "markers/misc/radiation.avif",
+  recycle: "markers/misc/recycle.avif",
   space_elevator: {
-    space_elevator: "markers/misc/space_elevator.png",
-    space_elevator_ready: "markers/misc/space_elevator_ready.png",
+    space_elevator: "markers/misc/space_elevator.avif",
+    space_elevator_ready: "markers/misc/space_elevator_ready.avif",
   },
-  tape: "markers/misc/tape.png",
-  vehicle_receive: "markers/misc/vehicle_receive.png",
-  vehicle_sending: "markers/misc/vehicle_sending.png",
+  tape: "markers/misc/tape.avif",
+  vehicle_receive: "markers/misc/vehicle_receive.avif",
+  vehicle_sending: "markers/misc/vehicle_sending.avif",
   vehicles: {
-    explorer: "markers/misc/explorer.png",
-    factory_cart: "markers/misc/factory_cart.png",
-    tractor: "markers/misc/tractor.png",
+    explorer: "markers/misc/explorer.avif",
+    factory_cart: "markers/misc/factory_cart.avif",
+    tractor: "markers/misc/tractor.avif",
     trains: {
-      train: "markers/misc/train.png",
-      train_station: "markers/misc/train_station.png",
+      train: "markers/misc/train.avif",
+      train_station: "markers/misc/train_station.avif",
     },
     trucks: {
-      truck: "markers/misc/truck.png",
-      truck_station: "markers/misc/truck_station.png",
+      truck: "markers/misc/truck.avif",
+      truck_station: "markers/misc/truck_station.avif",
     },
   },
 };
 
 export const normal = {
-  beacon: "markers/normal/beacon.png",
+  beacon: "markers/normal/beacon.avif",
   crate: {
-    crate_death: "markers/normal/create_death.png",
-    crate_loot: "markers/normal/crate_loot.png",
+    crate_death: "markers/normal/create_death.avif",
+    crate_loot: "markers/normal/crate_loot.avif",
   },
   drones: {
-    drone: "markers/normal/drone.png",
-    drone_station: "markers/normal/drone_station.png",
+    drone: "markers/normal/drone.avif",
+    drone_station: "markers/normal/drone_station.avif",
   },
-  drop_pod: "markers/normal/drop_pod.png",
-  hub: "markers/normal/hub.png",
+  drop_pod: "markers/normal/drop_pod.avif",
+  hub: "markers/normal/hub.avif",
   player: {
-    alive: "markers/normal/player.png",
-    player_dead: "markers/normal/player_dead.png",
-    player_offline: "markers/normal/player_offline.png",
+    alive: "markers/normal/player.avif",
+    player_dead: "markers/normal/player_dead.avif",
+    player_offline: "markers/normal/player_offline.avif",
   },
   portal: {
-    portal: "markers/normal/portal.png",
-    portal_satellite: "markers/normal/portal_satellite.png",
+    portal: "markers/normal/portal.avif",
+    portal_satellite: "markers/normal/portal_satellite.avif",
   },
-  power: "markers/normal/power.png",
-  question_mark: "markers/normal/question_mark.png",
-  radar_tower: "markers/normal/radar_tower.png",
-  radiation: "markers/normal/radiation.png",
-  recycle: "markers/normal/recycle.png",
-  space_elevator: "markers/normal/space_elevator.png",
-  tape: "markers/normal/tape.png",
-  vehicle_receive: "markers/normal/vehicle_receive.png",
-  vehicle_sending: "markers/normal/vehicle_sending.png",
+  power: "markers/normal/power.avif",
+  question_mark: "markers/normal/question_mark.avif",
+  radar_tower: "markers/normal/radar_tower.avif",
+  radiation: "markers/normal/radiation.avif",
+  recycle: "markers/normal/recycle.avif",
+  space_elevator: "markers/normal/space_elevator.avif",
+  tape: "markers/normal/tape.avif",
+  vehicle_receive: "markers/normal/vehicle_receive.avif",
+  vehicle_sending: "markers/normal/vehicle_sending.avif",
   vehicles: {
-    explorer: "markers/normal/explorer.png",
-    factory_cart: "markers/normal/factory_cart.png",
-    tractor: "markers/normal/tractor.png",
+    explorer: "markers/normal/explorer.avif",
+    factory_cart: "markers/normal/factory_cart.avif",
+    tractor: "markers/normal/tractor.avif",
     trains: {
-      train: "markers/normal/train.png",
-      train_station: "markers/normal/train_station.png",
+      train: "markers/normal/train.avif",
+      train_station: "markers/normal/train_station.avif",
     },
     trucks: {
-      truck: "markers/normal/truck.png",
-      truck_station: "markers/normal/truck_station.png",
+      truck: "markers/normal/truck.avif",
+      truck_station: "markers/normal/truck_station.avif",
     },
   },
   artifacts: {
-    somersloop: "markers/normal/BP_WAT1_C.png",
-    mercer_sphere: "markers/normal/BP_WAT2_C.png",
+    somersloop: "markers/normal/BP_WAT1_C.avif",
+    mercer_sphere: "markers/normal/BP_WAT2_C.avif",
   },
 
   buildings: {
-    conveyor_belt_mk_1: "markers/normal/conveyor_belt_mk_1.png",
-    pipeline_mk_1: "markers/normal/pipeline_mk_1.png",
+    conveyor_belt_mk_1: "markers/normal/conveyor_belt_mk_1.avif",
+    pipeline_mk_1: "markers/normal/pipeline_mk_1.avif",
   },
 };
 
 export const artifacts = {
-  somersloop: "markers/artifacts/somersloop.png",
-  mercer_sphere: "markers/artifacts/mercer_sphere.png",
+  somersloop: "markers/artifacts/somersloop.avif",
+  mercer_sphere: "markers/artifacts/mercer_sphere.avif",
 };
 
 export const resources = "markers/resources/";
