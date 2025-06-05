@@ -8,6 +8,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -16,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+        with:
+          repository: 'Bread-Ch4n/FRM-s-WebUI-Source'
 
       - name: Install Bun
         run: |
