@@ -8,6 +8,7 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -16,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+        with:
+          repository: 'Bread-Ch4n/FRM-s-WebUI-Source'
 
       - name: Install Bun
         run: |
@@ -44,17 +47,8 @@ jobs:
       - name: Rename output folder
         run: mv ./out ./www
 
-      - name: Archive www folder
-        run: tar -czf www.tar.gz ./www
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4.4.3
         with:
-          tag_name: "build-${{ github.run_id }}"
-          name: "UI Build ${{ github.run_id }}"
-          body: |
-            Build from commit ${{ github.sha }}
-            Run ID: ${{ github.run_id }}
-          files: www.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: www
+          path: ./www
