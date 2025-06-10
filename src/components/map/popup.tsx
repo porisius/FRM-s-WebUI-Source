@@ -38,6 +38,8 @@ import { artifacts } from "@/components/map/popup/artifacts";
 import { belts, splitter_merger } from "@/components/map/popup/belts";
 import { pipe_junctions, pipes } from "@/components/map/popup/pipes";
 import { storage_inv } from "@/components/map/popup/storage";
+import { lizard_doggos } from "@/components/map/popup/lizard_doggos";
+import { LizardDoggo } from "@/types/lizard_doggo";
 
 export const BoolBadge = ({
   bool,
@@ -199,6 +201,11 @@ export const makePopup = (layer: Layer | any, json: IDClassObject) => {
     }
     case "storage_inv": {
       const result = storage_inv(json as any); // TODO: Add storage inv type
+      popup = result.popup;
+      break;
+    }
+    case "lizard_doggos": {
+      const result = lizard_doggos(json as LizardDoggo);
       popup = result.popup;
       break;
     }

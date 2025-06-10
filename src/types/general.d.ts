@@ -23,6 +23,10 @@ type InventoryItem = ClassObject &
     MaxAmount: number;
   };
 
+type ObjectWithInv = ClassObject & {
+  Inventory: InventoryItem[];
+};
+
 interface Coordinates {
   x: number;
   y: number;
@@ -95,6 +99,7 @@ export type {
   IDBoundingColorSlotBoxClassObject,
   Item,
   InventoryItem,
+  ObjectWithInv,
   PowerInfo,
   Features,
   FeaturesProperty,

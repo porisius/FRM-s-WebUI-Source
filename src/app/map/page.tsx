@@ -3,7 +3,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Layers, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { artifacts, map, misc, power_slugs, resources } from "@/public/images";
+import {
+  animals,
+  artifacts,
+  map,
+  misc,
+  normal,
+  power_slugs,
+  resources,
+} from "@/public/images";
 import {
   Sheet,
   SheetContent,
@@ -68,6 +76,7 @@ import {
 } from "@/components/ui/tooltip";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { hypertube_junction, hypertube_T } from "@/lib/polygons/hypertube";
+import { Portal } from "@/types/portal";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -91,6 +100,8 @@ export default function MapPage() {
     image: map,
     bounds: [-375e3 + 50301.83203125, -375e3, 375e3 + 50301.83203125, 375e3],
   });
+
+  const [mapZoom, setZoomValue] = useState<any>(-10);
 
   const [dataVersion, setDataVersion] = useState<number>(0);
   const { baseURL, mapUseInGameColors, _hasHydrated } = useSettingsStore();
@@ -337,7 +348,11 @@ export default function MapPage() {
       updateTriggers: {
         visible: visible,
       },
-      getWidth: 100,
+      getWidth: (d) => {
+        const baseWidth = 100;
+        const calculatedWidth = baseWidth * (mapZoom > -8 ? 1 : 8);
+        return calculatedWidth;
+      },
       jointRounded: true,
       capRounded: true,
       pickable: true,
@@ -661,10 +676,10 @@ export default function MapPage() {
             const rotation = -location.rotation % 360;
 
             const corners: Point[] = [
-              [bbox.min.x + 40, bbox.min.y * -1 + 80],
-              [bbox.max.x + 40, bbox.min.y * -1 - 80],
-              [bbox.max.x - 40, bbox.max.y * -1 - 80],
-              [bbox.min.x - 40, bbox.max.y * -1 + 80],
+              [bbox.min.x - 80, bbox.min.y * -1 + 120],
+              [bbox.max.x - 80, bbox.min.y * -1 - 120],
+              [bbox.max.x - 240, bbox.max.y * -1 - 120],
+              [bbox.min.x - 240, bbox.max.y * -1 + 120],
             ];
 
             const center: Point = [location.x, location.y * -1];
@@ -1145,6 +1160,36 @@ export default function MapPage() {
       }),
     ),
     MakeIconLayer(misc.hub, "hub", nyaa["hub"].visible, null, null),
+    MakeIconLayer(
+      normal.animals.lizard_doggo,
+      "lizard_doggos",
+      nyaa["lizard_doggos"].visible,
+      null,
+      null,
+      (d: ResourceNode) => ({
+        url: animals.lizard_doggo,
+        width: 70,
+        height: 70,
+      }),
+    ),
+    new IconPolygonLayer({
+      id: "portals",
+      visible: nyaa["portals"].visible,
+      iconUrl: misc.portal.portal,
+      getLineWidth: 20,
+      getFillColor: () => hexToRgb("#f0c6c6"),
+      getLineColor: mapUseInGameColors
+        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
+        : [41, 44, 60],
+      getIconFunc: (d: Portal) => ({
+        url: {
+          Build_PortalSatellite_C: misc.portal.portal_satellite,
+          Build_Portal_C: misc.portal.portal,
+        }[d.ClassName],
+        width: 70,
+        height: 70,
+      }),
+    }),
   ];
 
   const [filterElement, setFilterElement] = useState<any>(null);
@@ -1318,6 +1363,14 @@ export default function MapPage() {
 
   return (
     <div>
+      <div
+        className={
+          "absolute bottom-20 left-20 bg-card border p-4 rounded-md z-1"
+        }
+      >
+        {mapZoom}
+      </div>
+
       <Sheet>
         <SheetTrigger
           style={{
@@ -1390,8 +1443,13 @@ export default function MapPage() {
         initialViewState={{
           target: [0, 0, 0],
           zoom: -10,
-          maxZoom: 18,
+          maxZoom: 0,
           minZoom: -10,
+        }}
+        onViewStateChange={({ viewState }) => {
+          const zoom = Math.round(viewState.zoom as number);
+          setZoomValue(zoom);
+          viewState.zoom = zoom;
         }}
         style={{
           height: "100%",

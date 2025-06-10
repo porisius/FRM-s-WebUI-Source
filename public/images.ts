@@ -104,6 +104,7 @@ export const normal = {
       truck_station: "markers/normal/truck_station.avif",
     },
   },
+
   artifacts: {
     somersloop: "markers/normal/BP_WAT1_C.avif",
     mercer_sphere: "markers/normal/BP_WAT2_C.avif",
@@ -113,6 +114,14 @@ export const normal = {
     conveyor_belt_mk_1: "markers/normal/conveyor_belt_mk_1.avif",
     pipeline_mk_1: "markers/normal/pipeline_mk_1.avif",
   },
+
+  animals: {
+    lizard_doggo: "markers/normal/Lizard_Doggo.avif",
+  },
+};
+
+export const animals = {
+  lizard_doggo: "markers/animals/Lizard_Doggo.avif",
 };
 
 export const artifacts = {
