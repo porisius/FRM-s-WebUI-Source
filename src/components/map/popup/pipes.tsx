@@ -1,14 +1,9 @@
-import { adjustColorShades, RGB, rgbToHsl } from "@/lib/helpers";
+import { adjustColorShades, getMkColor, RGB, rgbToHsl } from "@/lib/helpers";
 import React from "react";
 
 export function pipes(data: any, layer: any) {
   const color_popup = rgbToHsl(layer.props.getColor(data));
-  const tier = +(data.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN);
-  const color_text = rgbToHsl(
-    adjustColorShades(layer.props.getColor(data), 1, 0.85, false)[
-      tier - 1
-    ] as RGB,
-  );
+  const color_text = rgbToHsl(getMkColor(data.Name, [255, 204, 153], 1));
 
   let popup_color = `${color_popup[0]},${color_popup[1]}%,${color_popup[2]}%`;
   let text_color = `${color_text[0]},${color_text[1]}%,${color_text[2]}%`;

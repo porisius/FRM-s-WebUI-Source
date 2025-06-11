@@ -130,3 +130,7 @@ export const artifacts = {
 };
 
 export const resources = "markers/resources/";
+
+export const util_images = {
+  rotation: "markers/utils/rotation.avif",
+};

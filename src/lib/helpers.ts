@@ -1,6 +1,34 @@
 export type RGB = [number, number, number];
 export type HSL = [number, number, number];
 
+export function getMk(name: string): number {
+  try {
+    return +(name.match(/Mk[., ](\d+)/)?.[1] ?? "1");
+  } catch (e) {
+    return 1;
+  }
+}
+
+function getMkInternal(name: string): number {
+  try {
+    return +(name.match(/Mk[., ](\d+)/)?.[1] ?? NaN);
+  } catch (e) {
+    return NaN;
+  }
+}
+
+export function getMkColor(
+  name: string,
+  color: RGB,
+  maxMk: number,
+  darken: boolean = true,
+): RGB {
+  const mk = getMkInternal(name);
+  if (isNaN(mk)) return [198, 208, 245] as RGB;
+  const colors = adjustColorShades(color, maxMk, 0.85, darken);
+  return colors[mk - 1] as RGB;
+}
+
 function parseHSL(input: string | HSL): HSL {
   if (Array.isArray(input)) return input;
   const parts = input
