@@ -90,7 +90,8 @@ import { hypertube_junction, hypertube_T } from "@/lib/polygons/hypertube";
 import { Portal } from "@/types/portal";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
+import { cubicBezier } from "motion";
 import Link from "next/link";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
@@ -212,6 +213,29 @@ export default function MapPage() {
   }, [_hasHydrated]);
 
   const [nyaa, setUwU] = useState(() => structuredClone(layerStuff));
+
+  function MakeRotationLayer(id: string) {
+    const visible = nyaa[id].visible;
+    return new IconLayer({
+      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
+      getIcon: () => ({
+        height: 92,
+        url: util_images.rotation,
+        width: 72,
+        anchorY: 66,
+      }),
+      getPosition: (d: any) => [d.location.x, d.location.y * -1],
+      getAngle: (d) => -d.location.rotation,
+
+      getSize: 72,
+      id: `${id}_rotation`,
+      updateTriggers: {
+        visible: visible,
+      },
+      visible: visible,
+    });
+  }
 
   function MakeIconLayer(
     iconUrl: string,
@@ -795,6 +819,7 @@ export default function MapPage() {
           getFillColor: hexToRgb("#8aadf4"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("train"),
         MakeIconLayer(misc.vehicles.trains.train, "train", visible, null, null),
       ];
     }
@@ -822,6 +847,7 @@ export default function MapPage() {
           getFillColor: hexToRgb("#91d7e3"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("vehicles"),
         MakeIconLayer(
           misc.vehicles.trucks.truck,
           "vehicles",
@@ -865,6 +891,7 @@ export default function MapPage() {
           getFillColor: hexToRgb("#b7bdf8"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("drone"),
         MakeIconLayer(misc.drones.drone, "drone", visible, null, null),
       ];
     }
@@ -1463,7 +1490,7 @@ export default function MapPage() {
   }, [_hasHydrated]);
 
   const [message, setMessage] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isChatOpen, setChatOpen] = useState(false);
 
   const sendMessage = React.useCallback(async () => {
     if (username.trim() == "" || authToken.trim() == "") return;
@@ -1494,16 +1521,26 @@ export default function MapPage() {
     }
   }, [baseURL, authToken, username, message]);
 
+  const [isLayersFiltersOpen, setLayersFiltersOpen] = useState(false);
+
   return (
     <div>
-      <div className="absolute bottom-0 left-1/2 w-1/2 -translate-x-1/2 flex flex-col z-2">
+      <div className="absolute bottom-0 left-1/2 w-1/2 -translate-x-1/2 flex flex-col z-20">
         <div className={"relative h-10"}>
-          <div className="flex absolute h-10 left-0 z-2 w-35">
+          <div className="flex absolute h-10 left-0 z-2 w-60">
             <div
-              className="bg-card border-t border-l p-1 text-sm whitespace-nowrap w-fit rounded-tl-md border-b-0 flex justify-center items-center"
+              className="bg-card border-t border-l p-1 text-sm whitespace-nowrap w-fit rounded-tl-md border-b-0 flex items-center"
               style={{ fontSize: "initial" }}
             >
               <p className={"ml-3"}>Zoom: {mapZoom}</p>
+              <Separator orientation={"vertical"} className={"mx-1"} />
+              <Button
+                variant={"secondary"}
+                className={`h-8 w-1/2 ${isLayersFiltersOpen ? "bg-input/60" : "bg-card"} border inline-flex`}
+                onClick={() => setLayersFiltersOpen(!isLayersFiltersOpen)}
+              >
+                <Layers /> Layers
+              </Button>
             </div>
             <svg
               className={"h-10 text-card -ml-[1px]"}
@@ -1547,7 +1584,7 @@ export default function MapPage() {
               {username.trim() == "" || authToken.trim() == "" ? (
                 <Tooltip>
                   <TooltipTrigger
-                    className={"size-8 w-20 mr-3 rounded-md overflow-hidden"}
+                    className={"h-8 w-20 mr-3 rounded-md overflow-hidden"}
                   >
                     <Link
                       href={
@@ -1559,7 +1596,7 @@ export default function MapPage() {
                     >
                       <Button
                         variant={"secondary"}
-                        className={`size-8 w-20 mr-3 bg-card border`}
+                        className={`h-8 w-20 mr-3 bg-card border`}
                         disabled={
                           username.trim() == "" || authToken.trim() == ""
                         }
@@ -1580,8 +1617,8 @@ export default function MapPage() {
               ) : (
                 <Button
                   variant={"secondary"}
-                  className={`size-8 w-20 mr-3 ${isOpen ? "bg-input/60" : "bg-card"} border`}
-                  onClick={() => setIsOpen(() => !isOpen)}
+                  className={`h-8 w-20 mr-3 ${isChatOpen ? "bg-input/60" : "bg-card"} border`}
+                  onClick={() => setChatOpen(() => !isChatOpen)}
                   disabled={username.trim() == "" || authToken.trim() == ""}
                 >
                   <MessageCircle />
@@ -1591,7 +1628,7 @@ export default function MapPage() {
           </div>
 
           <AnimatePresence>
-            {isOpen && (
+            {isChatOpen && (
               <div
                 className={
                   "absolute overflow-hidden w-full h-150 left-1/2 bottom-0 -translate-x-1/2"
@@ -1672,7 +1709,7 @@ export default function MapPage() {
                       ease: "anticipate",
                       duration: 1.5,
                     }}
-                    className="flex p-3 space-x-2 mx-35"
+                    className="flex p-3 space-x-2 ml-60 mr-35"
                   >
                     <Input
                       placeholder="Type your message..."
@@ -1738,27 +1775,28 @@ export default function MapPage() {
           </div>
         </div>
       </div>
-
-      <Sheet>
-        <SheetTrigger
-          style={{
-            left: "50%",
-            position: "absolute",
-            zIndex: 2,
-            marginTop: 5,
-          }}
-          className={"left-1/2 absolute z-2 mt-[5px]"}
-        >
-          <Button variant={"secondary"} asChild>
-            <div>
-              <Layers className="mr-2 h-4 w-4" /> Layers
-            </div>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side={"left"}>
-          <ScrollArea className={"h-[90vh]"} type={"scroll"}>
-            <SheetHeader>
-              <SheetTitle>Layers & Filters</SheetTitle>
+      <AnimatePresence>
+        {isLayersFiltersOpen && (
+          <motion.div
+            className={
+              "absolute left-0 top-0 z-10 h-[100vh] bg-card border-r p-2"
+            }
+            initial={{ x: "-100%" }}
+            animate={{
+              x: 0,
+            }}
+            exit={{
+              x: "-100%",
+            }}
+            transition={{
+              ease: cubicBezier(0.36, 1, 0, 1),
+              duration: 1,
+            }}
+          >
+            <h1 className={"text-2xl font-semibold text-center"}>
+              Layers & Filters
+            </h1>
+            <ScrollArea className={"h-[90vh] mt-1"} type={"scroll"}>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 bg-card rounded-2xl shadow-inner max-h-[80vh] overflow-y-auto border">
                 {Object.entries(nyaa).map(([key, value]) => {
                   // @ts-ignore
@@ -1800,10 +1838,10 @@ export default function MapPage() {
               <div className={"gap-2 flex-col flex w-full"}>
                 {filterElement}
               </div>
-            </SheetHeader>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <DeckGL
         layers={[mapImg, ...master]}
