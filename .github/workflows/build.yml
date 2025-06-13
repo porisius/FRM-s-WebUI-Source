@@ -2,11 +2,14 @@ name: Build WebUI
 
 on:
   push:
-    branches: [main, dev]
+    branches:
+      - main
+      - dev
   pull_request:
-    branches: [main, dev]
+    branches:
+      - main
+      - dev
   workflow_dispatch:
-  workflow_call:
 
 jobs:
   build:
@@ -14,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -41,20 +44,35 @@ jobs:
 
       - name: Handle versioning
         run: |
+          set -x
           BRANCH="${GITHUB_REF##*/}"
-
+          echo "Running on branch: $BRANCH"
+          
           if [ "$BRANCH" = "dev" ]; then
             BASE_VERSION=$(jq -r '.version' package.json | cut -d '-' -f1)
             SHORT_SHA=$(git rev-parse --short HEAD)
             DEV_VERSION="${BASE_VERSION}-${SHORT_SHA}"
             jq --arg v "$DEV_VERSION" '.version=$v' package.json > tmp.json && mv tmp.json package.json
-            echo "Dev build version: $DEV_VERSION"
+            echo "Dev build version set to $DEV_VERSION"
 
           elif [ "$BRANCH" = "main" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            bunx release
-            git push --follow-tags origin main
+
+            echo "Git status before release:"
+            git status
+            echo "Last commit before release:"
+            git log -1 --oneline
+
+            bunx release --no-verify
+
+            echo "Git status after release:"
+            git status
+            echo "Last commit after release:"
+            git log -1 --oneline
+
+            git push origin main --quiet
+            git push origin --tags --quiet
           fi
 
       - name: Build project
@@ -64,7 +82,7 @@ jobs:
         run: mv ./out ./www
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4
         with:
           name: www
           path: ./www
