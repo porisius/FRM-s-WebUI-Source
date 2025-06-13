@@ -64,7 +64,7 @@ jobs:
             echo "Last commit before release:"
             git log -1 --oneline
 
-            bunx release --no-verify
+            bunx release
 
             echo "Git status after release:"
             git status
