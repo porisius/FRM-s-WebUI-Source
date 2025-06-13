@@ -91,6 +91,7 @@ import { Portal } from "@/types/portal";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -1465,6 +1466,7 @@ export default function MapPage() {
   const [isOpen, setIsOpen] = useState(false);
 
   const sendMessage = React.useCallback(async () => {
+    if (username.trim() == "" || authToken.trim() == "") return;
     if (!message.trim()) return;
     try {
       const response = await axios.post(
@@ -1542,14 +1544,49 @@ export default function MapPage() {
               className="bg-card border-t border-r p-1 text-sm whitespace-nowrap w-fit rounded-tr-md border-b-0 flex justify-center items-center"
               style={{ fontSize: "initial" }}
             >
-              <Button
-                variant={"secondary"}
-                className={`size-8 w-20 mr-3 ${isOpen ? "bg-input/60" : "bg-card"} border`}
-                onClick={() => setIsOpen(() => !isOpen)}
-                disabled={username.trim() == "" || authToken.trim() == ""}
-              >
-                <MessageCircle />
-              </Button>
+              {username.trim() == "" || authToken.trim() == "" ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    className={"size-8 w-20 mr-3 rounded-md overflow-hidden"}
+                  >
+                    <Link
+                      href={
+                        _hasHydrated
+                          ? location.origin +
+                            `/settings${username.trim() == "" || authToken.trim() == "" ? (username.trim() == "" ? "#username" : "#authorization") : ""}`
+                          : ""
+                      }
+                    >
+                      <Button
+                        variant={"secondary"}
+                        className={`size-8 w-20 mr-3 bg-card border`}
+                        disabled={
+                          username.trim() == "" || authToken.trim() == ""
+                        }
+                        asChild
+                      >
+                        <span>
+                          <MessageCircle className="text-muted-foreground" />
+                        </span>
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent className={"bg-card text-primary border"}>
+                    <p>
+                      To use chat feature please go to settings and set it up!
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant={"secondary"}
+                  className={`size-8 w-20 mr-3 ${isOpen ? "bg-input/60" : "bg-card"} border`}
+                  onClick={() => setIsOpen(() => !isOpen)}
+                  disabled={username.trim() == "" || authToken.trim() == ""}
+                >
+                  <MessageCircle />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1562,20 +1599,36 @@ export default function MapPage() {
               >
                 <motion.div
                   initial={{ y: "100%" }}
-                  animate={{ y: 0 }}
+                  animate={{
+                    y: 0,
+                  }}
+                  transition={{
+                    type: "spring",
+                    bounce: 0,
+                  }}
                   exit={{ y: "100%" }}
                   className={
-                    "absolute bg-card w-full h-150 left-1/2 bottom-0 -translate-x-1/2 rounded-t-md border overflow-hidden flex flex-col pointer-events-auto"
+                    "absolute bg-card w-full h-150 left-1/2 bottom-0 -translate-x-1/2 rounded-t-md border overflow-hidden flex flex-col pointer-events-auto border-b-0"
                   }
                 >
-                  <ScrollArea className="p-3 flex-1 overflow-y-auto flex flex-col gap-1 scrollarea-child-target border-b">
-                    {chatData.map((message) => {
+                  <ScrollArea
+                    className="p-3 flex-1 overflow-y-auto flex flex-col gap-1 scrollarea-child-target border-b"
+                    type={"always"}
+                  >
+                    {chatData.map((message, index) => {
                       const isUser = message.Sender == username;
                       const [r, g, b, a] = rgbaFloatToRGBA(message.Color);
                       return (
-                        <div
+                        <motion.div
+                          initial={{ x: isUser ? "105%" : "-105%" }}
+                          animate={{ x: 0 }}
+                          transition={{
+                            ease: "anticipate",
+                            duration: 1.5,
+                            delay: 0.1 * index,
+                          }}
                           key={message.ServerTimeStamp + message.Sender}
-                          className={`max-w-[80%] p-3 rounded-md shadow-sm border space-y-1 right-0 my-1 ${
+                          className={`max-w-[80%] p-3 rounded-md shadow-sm border space-y-1 right-0 my-1 overflow-hidden  ${
                             isUser
                               ? "self-end rounded-br-none"
                               : `self-start rounded-bl-none`
@@ -1595,21 +1648,32 @@ export default function MapPage() {
                                 : `rgb(${r},${g},${b},0.1)`,
                           }}
                         >
-                          <p className="font-semibold text-sm mb-1">
+                          <p className="font-semibold text-sm mb-1 ">
                             {message.Type == "System"
                               ? message.Sender
                               : message.Sender
                                 ? message.Sender
                                 : "FRM"}
                           </p>
-                          <p className="text-sm whitespace-pre-wrap">
+                          <p className="text-sm whitespace-pre-wrap break-all">
                             {message.Message}
                           </p>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </ScrollArea>
-                  <div className="flex p-3 space-x-2 mx-35">
+                  <motion.div
+                    initial={{ y: "100%", opacity: 0 }}
+                    animate={{
+                      y: 0,
+                      opacity: 1,
+                    }}
+                    transition={{
+                      ease: "anticipate",
+                      duration: 1.5,
+                    }}
+                    className="flex p-3 space-x-2 mx-35"
+                  >
                     <Input
                       placeholder="Type your message..."
                       className="flex-1 rounded-md border px-3 py-2"
@@ -1626,7 +1690,7 @@ export default function MapPage() {
                     >
                       Send
                     </Button>
-                  </div>
+                  </motion.div>
                 </motion.div>
               </div>
             )}
