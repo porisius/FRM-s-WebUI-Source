@@ -1,5 +1,13 @@
 # Changelog
 
+
+## [1.4.0](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/compare/v1.2.0...v1.4.0) (2025-06-14)
+
+
+### Features
+
+* More Map Enchantments ([#9](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/issues/9)) ([9ce945f](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/commit/9ce945f16a43b9453eee9929db98c85f01c7e785)), closes [#8](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/issues/8)
+
 ## [1.3.0](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/compare/v1.2.0...v1.3.0) (2025-06-11)
 
 
