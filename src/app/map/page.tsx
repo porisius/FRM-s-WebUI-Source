@@ -30,6 +30,7 @@ import DeckGL, {
   Layer,
   LayersList,
   LineLayer,
+  MapController,
   OrthographicView,
   PathLayer,
   PickingInfo,
@@ -1853,9 +1854,10 @@ export default function MapPage() {
           minZoom: -10,
         }}
         onViewStateChange={({ viewState }) => {
-          const zoom = Math.round(viewState.zoom as number);
-          setZoomValue(zoom);
-          viewState.zoom = zoom;
+          setZoomValue(Math.round(viewState.zoom as number));
+        }}
+        controller={{
+          scrollZoom: { smooth: true, speed: 0.5 },
         }}
         style={{
           height: "100%",
