@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/compare/v1.2.0...v1.3.0) (2025-06-11)
+
+
+### Features
+
+* Map Enchantments ([e59de15](https://github.com/Bread-Ch4n/FRM-s-WebUI-Source/commit/e59de152500521a88643effddd88a54194cb47fb))
 
 ## 1.2.0 (2025-06-10)
 

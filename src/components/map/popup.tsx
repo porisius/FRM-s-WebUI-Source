@@ -261,6 +261,16 @@ export const makePopup = (layer: Layer | any, json: IDClassObject) => {
           )}
           {dev && <CardDescription>{json.ClassName}</CardDescription>}
           {dev && <CardDescription>{layerId}</CardDescription>}
+          {dev && (
+            <CardDescription>
+              <p>X: {(json as any).location.x}</p>
+              <p>Y: {(json as any).location.y}</p>
+              <p>Z: {(json as any).location.z}</p>
+              {(json as any).location.rotation && (
+                <p>Rotation: {(json as any).location.rotation}</p>
+              )}
+            </CardDescription>
+          )}
         </CardContent>
       </div>
     </Card>,

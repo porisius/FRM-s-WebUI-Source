@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Check, Layers, X } from "lucide-react";
+import { Check, Layers, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   animals,
@@ -11,6 +11,7 @@ import {
   normal,
   power_slugs,
   resources,
+  util_images,
 } from "@/public/images";
 import {
   Sheet,
@@ -26,7 +27,10 @@ import DeckGL, {
   COORDINATE_SYSTEM,
   GetPickingInfoParams,
   IconLayer,
+  Layer,
+  LayersList,
   LineLayer,
+  MapController,
   OrthographicView,
   PathLayer,
   PickingInfo,
@@ -45,7 +49,15 @@ import {
   rotatePoint,
   scalePoint,
 } from "../map/utils";
-import { adjustColorShades, hexToRgb, RGB, toHex6 } from "@/lib/helpers";
+import {
+  adjustColorShades,
+  getMk,
+  getMkColor,
+  hexToRgb,
+  RGB,
+  rgbaFloatToRGBA,
+  toHex6,
+} from "@/lib/helpers";
 import {
   Popover,
   PopoverContent,
@@ -62,7 +74,7 @@ import { Player } from "@/types/player";
 import { SpaceElevator } from "@/types/space-elevator";
 import axios from "axios";
 import { useSettingsStore } from "@/stores/settings";
-import Chat from "@/components/chat";
+
 import {
   BoundingBox,
   CoordinatesWithRotation,
@@ -77,6 +89,11 @@ import {
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { hypertube_junction, hypertube_T } from "@/lib/polygons/hypertube";
 import { Portal } from "@/types/portal";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { AnimatePresence, motion } from "motion/react";
+import { cubicBezier } from "motion";
+import Link from "next/link";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -102,9 +119,18 @@ export default function MapPage() {
   });
 
   const [mapZoom, setZoomValue] = useState<any>(-10);
+  const defaultZRange = [-25000, 200000];
+  const [zRange, setZRange] = useState<any>(defaultZRange);
 
   const [dataVersion, setDataVersion] = useState<number>(0);
-  const { baseURL, mapUseInGameColors, _hasHydrated } = useSettingsStore();
+  const {
+    baseURL,
+    mapUseInGameColors,
+    _hasHydrated,
+    fetchSpeed,
+    authToken,
+    username,
+  } = useSettingsStore();
 
   async function buildFilters() {
     let rawData;
@@ -189,6 +215,29 @@ export default function MapPage() {
 
   const [nyaa, setUwU] = useState(() => structuredClone(layerStuff));
 
+  function MakeRotationLayer(id: string) {
+    const visible = nyaa[id].visible;
+    return new IconLayer({
+      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
+      getIcon: () => ({
+        height: 92,
+        url: util_images.rotation,
+        width: 72,
+        anchorY: 66,
+      }),
+      getPosition: (d: any) => [d.location.x, d.location.y * -1],
+      getAngle: (d) => -d.location.rotation,
+
+      getSize: 72,
+      id: `${id}_rotation`,
+      updateTriggers: {
+        visible: visible,
+      },
+      visible: visible,
+    });
+  }
+
   function MakeIconLayer(
     iconUrl: string,
     id: string,
@@ -204,9 +253,9 @@ export default function MapPage() {
       getIcon: getIconFunc
         ? getIconFunc
         : () => ({
-            height: 70,
+            height: 72,
             url: iconUrl,
-            width: 70,
+            width: 72,
           }),
       getPosition: (d: any) => [d.location.x, d.location.y * -1],
       getSize: 70,
@@ -258,6 +307,9 @@ export default function MapPage() {
         visible: visible,
       },
       visible: visible,
+      getFilterValue: (d: any) => [Math.round(d.location.z)],
+      filterRange: zRange,
+      extensions: [new DataFilterExtension({ filterSize: 1 })],
     });
   }
 
@@ -304,6 +356,9 @@ export default function MapPage() {
             visible: visible && !zoomedIn,
           },
           visible: visible && !zoomedIn,
+          getFilterValue: (d: any) => [Math.round(d.location.z)],
+          filterRange: zRange,
+          extensions: [new DataFilterExtension({ filterSize: 1 })],
         }),
         new PolygonLayer({
           autoHighlight: true,
@@ -326,6 +381,9 @@ export default function MapPage() {
             visible: visible && zoomedIn,
           },
           visible: visible && zoomedIn,
+          getFilterValue: (d: any) => [Math.round(d.location.z)],
+          filterRange: zRange,
+          extensions: [new DataFilterExtension({ filterSize: 1 })],
         }),
       ];
     }
@@ -378,11 +436,7 @@ export default function MapPage() {
         MakePathLayer(
           "belts",
           (d: any) => {
-            const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
-            const tier = +(
-              d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
-            );
-            return colors[tier - 1];
+            return getMkColor(d.Name, [153, 209, 219], 5);
           },
           visible,
         ),
@@ -391,18 +445,10 @@ export default function MapPage() {
           visible,
           20,
           (d: any) => {
-            const colors = adjustColorShades([153, 209, 219], 5) as RGB[];
-            const tier = +(
-              d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
-            );
-            return colors[tier - 1];
+            return getMkColor(d.Name, [153, 209, 219], 5);
           },
           (d: any) => {
-            const colors = adjustColorShades([153, 209, 219], 6) as RGB[];
-            const tier = +(
-              d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
-            );
-            return colors[tier];
+            return getMkColor(d.Name, [153, 209, 219], 6);
           },
           (
             d: IDBoundingColorSlotBoxClassObject &
@@ -571,11 +617,7 @@ export default function MapPage() {
         MakePathLayer(
           "pipes",
           (d: any) => {
-            const colors = adjustColorShades([255, 204, 153], 1) as RGB[];
-            const tier = +(
-              d.features.properties.name.match(/Mk\.(\d+)/)?.[1] ?? NaN
-            );
-            return colors[tier - 1];
+            return getMkColor(d.Name, [255, 204, 153], 1);
           },
           visible,
         ),
@@ -778,6 +820,7 @@ export default function MapPage() {
           getFillColor: hexToRgb("#8aadf4"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("train"),
         MakeIconLayer(misc.vehicles.trains.train, "train", visible, null, null),
       ];
     }
@@ -805,6 +848,7 @@ export default function MapPage() {
           getFillColor: hexToRgb("#91d7e3"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("vehicles"),
         MakeIconLayer(
           misc.vehicles.trucks.truck,
           "vehicles",
@@ -848,7 +892,61 @@ export default function MapPage() {
           getFillColor: hexToRgb("#b7bdf8"),
           getLineColor: [41, 44, 60],
         }),
+        MakeRotationLayer("drone"),
         MakeIconLayer(misc.drones.drone, "drone", visible, null, null),
+      ];
+    }
+  }
+
+  class PlayerLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    getPickingInfo({ info }: GetPickingInfoParams) {
+      if (!info.layer || !info.sourceLayer) return info;
+      info.layer = info.sourceLayer;
+      return info;
+    }
+
+    renderLayers(): Layer | LayersList | null {
+      return [
+        new IconLayer({
+          coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+          data: nyaa["players"].visible
+            ? baseURL + nyaa["players"].url + `#${dataVersion}`
+            : [],
+          getIcon: () => ({
+            height: 92,
+            url: util_images.rotation,
+            width: 72,
+            anchorY: 66,
+          }),
+          getPosition: (d: any) => [d.location.x, d.location.y * -1],
+          getAngle: (d) => -d.location.rotation,
+
+          getSize: 72,
+          id: "players_rotation",
+          updateTriggers: {
+            visible: nyaa["players"].visible,
+          },
+          visible: nyaa["players"].visible,
+        }),
+        MakeIconLayer(
+          misc.player.alive,
+          "players",
+          nyaa["players"].visible,
+          null,
+          null,
+          (d: Player) => ({
+            url: d.Dead
+              ? misc.player.player_dead
+              : (d.Online as boolean)
+                ? misc.player.alive
+                : misc.player.player_offline,
+            width: 72,
+            height: 72,
+          }),
+        ),
       ];
     }
   }
@@ -1143,22 +1241,11 @@ export default function MapPage() {
         : [41, 44, 60],
     }),
 
-    MakeIconLayer(
-      misc.player.alive,
-      "players",
-      nyaa["players"].visible,
-      null,
-      null,
-      (d: Player) => ({
-        url: d.Dead
-          ? misc.player.player_dead
-          : (d.Online as boolean)
-            ? misc.player.alive
-            : misc.player.player_offline,
-        width: 70,
-        height: 70,
-      }),
-    ),
+    new PlayerLayer({
+      uwu: "uwu",
+      ThisIsForUpdating: () => {},
+    }),
+
     MakeIconLayer(misc.hub, "hub", nyaa["hub"].visible, null, null),
     MakeIconLayer(
       normal.animals.lizard_doggo,
@@ -1361,36 +1448,356 @@ export default function MapPage() {
     [built_nyaa_filters, new_nyaa_filters],
   );
 
+  type ChatMessage = {
+    ServerTimeStamp: number;
+    Sender: string;
+    Type: "System" | "Player";
+    Message: string;
+    Color: {
+      R: number;
+      G: number;
+      B: number;
+      A: number;
+    };
+  };
+
+  const [chatData, setChatData] = useState<ChatMessage[]>([]);
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    const interval = setInterval(async () => {
+      try {
+        let data: ChatMessage[] = (
+          await axios.get(baseURL + "/getChatMessages")
+        ).data;
+        data = data.map((message) => {
+          return message.Type == "System"
+            ? {
+                ...message,
+                Sender: "System",
+                Message: message.Message.replace(
+                  "<PlayerName/>",
+                  message.Sender,
+                ),
+              }
+            : message;
+        });
+        setChatData(data);
+      } catch {}
+    }, fetchSpeed);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [_hasHydrated]);
+
+  const [message, setMessage] = useState("");
+  const [isChatOpen, setChatOpen] = useState(false);
+
+  const sendMessage = React.useCallback(async () => {
+    if (username.trim() == "" || authToken.trim() == "") return;
+    if (!message.trim()) return;
+    try {
+      const response = await axios.post(
+        baseURL + "/sendChatMessage",
+        {
+          message,
+          sender: username,
+        },
+        {
+          headers: {
+            "X-FRM-Authorization": authToken,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (response.status === 200) setMessage("");
+      return response.status === 200
+        ? { status: "OK", message: "Message Sent!" }
+        : { status: "Error", message: response.data.error };
+    } catch (error: any) {
+      return {
+        status: "Error",
+        message: error.message || "Failed to send message",
+      };
+    }
+  }, [baseURL, authToken, username, message]);
+
+  const [isLayersFiltersOpen, setLayersFiltersOpen] = useState(false);
+
   return (
     <div>
-      <div
-        className={
-          "absolute bottom-20 left-20 bg-card border p-4 rounded-md z-1"
-        }
-      >
-        {mapZoom}
-      </div>
-
-      <Sheet>
-        <SheetTrigger
-          style={{
-            left: "50%",
-            position: "absolute",
-            zIndex: 2,
-            marginTop: 5,
-          }}
-          className={"left-1/2 absolute z-2 mt-[5px]"}
-        >
-          <Button variant={"secondary"} asChild>
-            <div>
-              <Layers className="mr-2 h-4 w-4" /> Layers
+      <div className="absolute bottom-0 left-1/2 w-1/2 -translate-x-1/2 flex flex-col z-20">
+        <div className={"relative h-10"}>
+          <div className="flex absolute h-10 left-0 z-2 w-60">
+            <div
+              className="bg-card border-t border-l p-1 text-sm whitespace-nowrap w-fit rounded-tl-md border-b-0 flex items-center"
+              style={{ fontSize: "initial" }}
+            >
+              <p className={"ml-3"}>Zoom: {mapZoom}</p>
+              <Separator orientation={"vertical"} className={"mx-1"} />
+              <Button
+                variant={"secondary"}
+                className={`h-8 w-1/2 ${isLayersFiltersOpen ? "bg-input/60" : "bg-card"} border inline-flex`}
+                onClick={() => setLayersFiltersOpen(!isLayersFiltersOpen)}
+              >
+                <Layers /> Layers
+              </Button>
             </div>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side={"left"}>
-          <ScrollArea className={"h-[90vh]"} type={"scroll"}>
-            <SheetHeader>
-              <SheetTitle>Layers & Filters</SheetTitle>
+            <svg
+              className={"h-10 text-card -ml-[1px]"}
+              viewBox="1 0 15 15"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M16 15 C8 15 8 0 1 0 V15 H8 H16 Z" fill="currentColor" />
+
+              <path
+                d="M16 15 C8 15 8 0 1 0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                className={"stroke-border"}
+              />
+            </svg>
+          </div>
+
+          <div className="flex absolute h-10 right-0 z-2 w-35">
+            <svg
+              className="h-10 text-card -mr-[1px] transform -scale-x-100"
+              viewBox="1 0 15 15"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M16 15 C8 15 8 0 1 0 V15 H8 H16 Z" fill="currentColor" />
+              <path
+                d="M16 15 C8 15 8 0 1 0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+                className="stroke-border"
+              />
+            </svg>
+
+            <div
+              className="bg-card border-t border-r p-1 text-sm whitespace-nowrap w-fit rounded-tr-md border-b-0 flex justify-center items-center"
+              style={{ fontSize: "initial" }}
+            >
+              {username.trim() == "" || authToken.trim() == "" ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    className={"h-8 w-20 mr-3 rounded-md overflow-hidden"}
+                  >
+                    <Link
+                      href={
+                        _hasHydrated
+                          ? location.origin +
+                            `/settings${username.trim() == "" || authToken.trim() == "" ? (username.trim() == "" ? "#username" : "#authorization") : ""}`
+                          : ""
+                      }
+                    >
+                      <Button
+                        variant={"secondary"}
+                        className={`h-8 w-20 mr-3 bg-card border`}
+                        disabled={
+                          username.trim() == "" || authToken.trim() == ""
+                        }
+                        asChild
+                      >
+                        <span>
+                          <MessageCircle className="text-muted-foreground" />
+                        </span>
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent className={"bg-card text-primary border"}>
+                    <p>
+                      To use chat feature please go to settings and set it up!
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant={"secondary"}
+                  className={`h-8 w-20 mr-3 ${isChatOpen ? "bg-input/60" : "bg-card"} border`}
+                  onClick={() => setChatOpen(() => !isChatOpen)}
+                  disabled={username.trim() == "" || authToken.trim() == ""}
+                >
+                  <MessageCircle />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {isChatOpen && (
+              <div
+                className={
+                  "absolute overflow-hidden w-full h-150 left-1/2 bottom-0 -translate-x-1/2"
+                }
+              >
+                <motion.div
+                  initial={{ y: "100%" }}
+                  animate={{
+                    y: 0,
+                  }}
+                  transition={{
+                    type: "spring",
+                    bounce: 0,
+                  }}
+                  exit={{ y: "100%" }}
+                  className={
+                    "absolute bg-card w-full h-150 left-1/2 bottom-0 -translate-x-1/2 rounded-t-md border overflow-hidden flex flex-col pointer-events-auto border-b-0"
+                  }
+                >
+                  <ScrollArea
+                    className="p-3 flex-1 overflow-y-auto flex flex-col gap-1 scrollarea-child-target border-b"
+                    type={"always"}
+                  >
+                    {chatData.map((message, index) => {
+                      const isUser = message.Sender == username;
+                      const [r, g, b, a] = rgbaFloatToRGBA(message.Color);
+                      return (
+                        <motion.div
+                          initial={{ x: isUser ? "105%" : "-105%" }}
+                          animate={{ x: 0 }}
+                          transition={{
+                            ease: "anticipate",
+                            duration: 1.5,
+                            delay: 0.1 * index,
+                          }}
+                          key={message.ServerTimeStamp + message.Sender}
+                          className={`max-w-[80%] p-3 rounded-md shadow-sm border space-y-1 right-0 my-1 overflow-hidden  ${
+                            isUser
+                              ? "self-end rounded-br-none"
+                              : `self-start rounded-bl-none`
+                          }`}
+                          style={{
+                            borderColor:
+                              message.Sender === "System"
+                                ? "var(--color-blue-400)"
+                                : `rgb(${r},${g},${b})`,
+                            color:
+                              message.Sender === "System"
+                                ? "var(--color-blue-400)"
+                                : `rgb(${r},${g},${b})`,
+                            backgroundColor:
+                              message.Sender === "System"
+                                ? "color-mix(in oklab, var(--color-blue-400) /* oklch(70.7% 0.165 254.624) */ 10%, transparent)"
+                                : `rgb(${r},${g},${b},0.1)`,
+                          }}
+                        >
+                          <p className="font-semibold text-sm mb-1 ">
+                            {message.Type == "System"
+                              ? message.Sender
+                              : message.Sender
+                                ? message.Sender
+                                : "FRM"}
+                          </p>
+                          <p className="text-sm whitespace-pre-wrap break-all">
+                            {message.Message}
+                          </p>
+                        </motion.div>
+                      );
+                    })}
+                  </ScrollArea>
+                  <motion.div
+                    initial={{ y: "100%", opacity: 0 }}
+                    animate={{
+                      y: 0,
+                      opacity: 1,
+                    }}
+                    transition={{
+                      ease: "anticipate",
+                      duration: 1.5,
+                    }}
+                    className="flex p-3 space-x-2 ml-60 mr-35"
+                  >
+                    <Input
+                      placeholder="Type your message..."
+                      className="flex-1 rounded-md border px-3 py-2"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") sendMessage();
+                      }}
+                    />
+                    <Button
+                      className="px-5 py-2 rounded-md transition"
+                      onClick={sendMessage}
+                      disabled={message.trim() == ""}
+                    >
+                      Send
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="bg-card border p-4 flex flex-col items-center gap-2">
+          <div className="flex w-full gap-6 items-center">
+            <Input
+              type="number"
+              min={defaultZRange[0]}
+              max={zRange[1]}
+              value={zRange[0]}
+              className="text-center"
+              onChange={(e) => {
+                const newValue = Math.max(
+                  defaultZRange[0],
+                  Math.min(Number(e.currentTarget.value), zRange[1]),
+                );
+                setZRange([newValue, zRange[1]]);
+              }}
+            />
+            <Slider
+              defaultValue={defaultZRange}
+              min={defaultZRange[0]}
+              max={defaultZRange[1]}
+              step={1}
+              value={zRange}
+              onValueChange={(value) => setZRange(value)}
+            />
+            <Input
+              type="number"
+              min={zRange[0]}
+              max={defaultZRange[1]}
+              value={zRange[1]}
+              className="text-center"
+              onChange={(e) => {
+                const newValue = Math.min(
+                  defaultZRange[1],
+                  Math.max(Number(e.currentTarget.value), zRange[0]),
+                );
+                setZRange([zRange[0], newValue]);
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <AnimatePresence>
+        {isLayersFiltersOpen && (
+          <motion.div
+            className={
+              "absolute left-0 top-0 z-10 h-[100vh] bg-card border-r p-2"
+            }
+            initial={{ x: "-100%" }}
+            animate={{
+              x: 0,
+            }}
+            exit={{
+              x: "-100%",
+            }}
+            transition={{
+              ease: cubicBezier(0.36, 1, 0, 1),
+              duration: 1,
+            }}
+          >
+            <h1 className={"text-2xl font-semibold text-center"}>
+              Layers & Filters
+            </h1>
+            <ScrollArea className={"h-[90vh] mt-1"} type={"scroll"}>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 bg-card rounded-2xl shadow-inner max-h-[80vh] overflow-y-auto border">
                 {Object.entries(nyaa).map(([key, value]) => {
                   // @ts-ignore
@@ -1432,10 +1839,10 @@ export default function MapPage() {
               <div className={"gap-2 flex-col flex w-full"}>
                 {filterElement}
               </div>
-            </SheetHeader>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <DeckGL
         layers={[mapImg, ...master]}
@@ -1447,9 +1854,10 @@ export default function MapPage() {
           minZoom: -10,
         }}
         onViewStateChange={({ viewState }) => {
-          const zoom = Math.round(viewState.zoom as number);
-          setZoomValue(zoom);
-          viewState.zoom = zoom;
+          setZoomValue(Math.round(viewState.zoom as number));
+        }}
+        controller={{
+          scrollZoom: { smooth: true, speed: 0.5 },
         }}
         style={{
           height: "100%",
@@ -1469,8 +1877,6 @@ export default function MapPage() {
           [],
         )}
       />
-
-      <Chat />
     </div>
   );
 }
