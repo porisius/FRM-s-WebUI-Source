@@ -1,5 +1,6 @@
 import React from "react";
 import { BoolBadge } from "@/components/map/popup";
+import { ProductionAmplifiers } from "@/components/map/popup/utils";
 
 export function factory(data: any) {
   let popup = {
@@ -30,10 +31,11 @@ export function factory(data: any) {
             }`}
             removeIcons={true}
           />
-          <BoolBadge bool={data["IsConfigured"]} text={"Is Configured"} />
-          <BoolBadge bool={data["IsProducing"]} text={"Is Producing"} />
-          <BoolBadge bool={data["IsPaused"]} text={"Is Paused"} />
+          <BoolBadge bool={data["IsConfigured"]} text={"Configured"} />
+          <BoolBadge bool={data["IsProducing"]} text={"Producing"} />
+          <BoolBadge bool={data["IsPaused"]} text={"Paused"} />
         </div>
+        <ProductionAmplifiers data={data} />
       </div>
     ),
   };

@@ -1,5 +1,6 @@
 import React from "react";
 import { BoolBadge } from "@/components/map/popup";
+import { ProductionAmplifiers } from "@/components/map/popup/utils";
 
 export function generators(data: any) {
   let popup = {
@@ -14,6 +15,7 @@ export function generators(data: any) {
           <BoolBadge bool={data["IsFullSpeed"]} text={"Is Full Speed"} />
           <BoolBadge bool={data["CanStart"]} text={"Can Start"} />
         </div>
+        <ProductionAmplifiers data={data} />
       </div>
     ),
   };

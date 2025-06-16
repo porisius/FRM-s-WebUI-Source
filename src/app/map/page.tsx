@@ -109,6 +109,7 @@ export default function MapPage() {
     flipY: false,
     controller: {
       dragRotate: false,
+      // scrollZoom: { speed: 0.5}, TODO: Currently is broken (breaks the popups 🥲)
     },
   });
 
@@ -1855,9 +1856,6 @@ export default function MapPage() {
         }}
         onViewStateChange={({ viewState }) => {
           setZoomValue(Math.round(viewState.zoom as number));
-        }}
-        controller={{
-          scrollZoom: { smooth: true, speed: 0.5 },
         }}
         style={{
           height: "100%",

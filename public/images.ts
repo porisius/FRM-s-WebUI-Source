@@ -118,6 +118,10 @@ export const normal = {
   animals: {
     lizard_doggo: "markers/normal/Lizard_Doggo.avif",
   },
+
+  items: {
+    power_shard: "markers/normal/Power_Shard.avif",
+  },
 };
 
 export const animals = {
