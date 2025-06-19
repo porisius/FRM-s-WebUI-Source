@@ -1,6 +1,6 @@
 {
   "name": "frm_webui",
-  "version": "1.4.0-dev.5",
+  "version": "1.4.0-dev.6",
   "author": {
     "name": "Bread-Chan",
     "url": "https://github.com/Bread-Ch4n"
@@ -18,7 +18,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "release": "commit-and-tag-version",
+    "release": "bun run bumpVersion.js",
     "prepare": "husky install"
   },
   "dependencies": {
