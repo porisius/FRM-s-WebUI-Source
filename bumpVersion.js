@@ -48,7 +48,6 @@ function main() {
   const currentBranch = getCurrentBranch();
   const mainVersion = getMainVersion();
   const latestTag = getMainLatestTag();
-  console.log(mainVersion, latestTag);
   bump(
     {
       bumpFiles: bumpFiles,
@@ -67,7 +66,7 @@ function main() {
       commitAndTagVersion({
         header: "# Changelog\n\n",
         prerelease: currentBranch === "dev" ? "dev" : false,
-        "release-as": currentBranch === "dev" ? `v${nextVersion}` : mainVersion,
+        releaseAs: currentBranch === "dev" ? `${nextVersion}` : mainVersion,
         silent: currentBranch === "dev",
         skip: {
           changelog: currentBranch === "dev",
