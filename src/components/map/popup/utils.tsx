@@ -1,7 +1,6 @@
-import Image from "next/image";
-import { normal } from "@/public/images";
 import React from "react";
 import { Item } from "@/components/custom/item";
+import { images } from "@/public/map/images";
 
 type ProductionAmplifiersProps = {
   data: {
@@ -20,14 +19,14 @@ export function ProductionAmplifiers({ data }: ProductionAmplifiersProps) {
     <div className="inline-flex gap-1 items-center justify-center w-full mt-2">
       {somersloops > 0 && (
         <Item
-          icon={normal.artifacts.somersloop}
+          icon={images.Artifacts.Somersloop}
           count={somersloops}
           color="347,82%,58%"
         />
       )}
       {powerShards > 0 && (
         <Item
-          icon={normal.items.power_shard}
+          icon={images.Items.Power_Shard}
           count={powerShards}
           color="26,69%,48%"
         />

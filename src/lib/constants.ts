@@ -10,6 +10,8 @@ export const colors = {
   orange: "20,79%,70%",
   red: "359,68%,71%",
   blue: "222,74%,74%",
+  white: "227,70%,87%",
+  yellow: "40,62%,73%",
 };
 
 export const classNameColors = {

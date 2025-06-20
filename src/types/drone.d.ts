@@ -6,6 +6,7 @@ import type {
   LocationWithRotation,
   PowerInfo,
 } from "./general";
+import { CurrentFlyingMode } from "@/enums/drone";
 
 type Drone = IDClassObject &
   LocationWithRotation & {
@@ -15,7 +16,7 @@ type Drone = IDClassObject &
     CurrentDestination: string;
     FlyingSpeed: number;
     MaxSpeed: number;
-    CurrentFlyingMode: string; // TODO: enum
+    CurrentFlyingMode: CurrentFlyingMode;
     features: Features<FeaturesProperty<"Drone", "Drone">>;
   };
 

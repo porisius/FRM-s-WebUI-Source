@@ -155,3 +155,66 @@ export function rgbaFloatToRGBA(color: {
 
   return [r, g, b, a];
 }
+
+export const loadImage = (src: string) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+
+export const combineThreeImagesToBase64 = async (
+  bgSrc: string,
+  centerSrc: string,
+  overlaySrc: string,
+) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 70;
+  canvas.height = 70;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const [bg, center, overlay]: any = await Promise.all([
+    loadImage(bgSrc),
+    loadImage(centerSrc),
+    loadImage(overlaySrc),
+  ]);
+
+  ctx.drawImage(bg, 0, 0, 70, 70);
+
+  const centerSize = 55;
+  const cx = (canvas.width - centerSize) / 2;
+  const cy = (canvas.height - centerSize) / 2;
+  ctx.drawImage(center, cx, cy, centerSize, centerSize);
+
+  ctx.drawImage(overlay, 40, 40, 30, 30);
+
+  return canvas.toDataURL("image/png");
+};
+
+export const combineTwoImagesToBase64 = async (
+  bgSrc: string,
+  centerSrc: string,
+) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = 70;
+  canvas.height = 70;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const [bg, center]: any = await Promise.all([
+    loadImage(bgSrc),
+    loadImage(centerSrc),
+  ]);
+
+  ctx.drawImage(bg, 0, 0, 70, 70);
+
+  const centerSize = 55;
+  const cx = (canvas.width - centerSize) / 2;
+  const cy = (canvas.height - centerSize) / 2;
+  ctx.drawImage(center, cx, cy, centerSize, centerSize);
+
+  return canvas.toDataURL("image/png");
+};

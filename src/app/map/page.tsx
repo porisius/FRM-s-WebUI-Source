@@ -3,23 +3,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Layers, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  animals,
-  artifacts,
-  map,
-  misc,
-  normal,
-  power_slugs,
-  resources,
-  util_images,
-} from "@/public/images";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DeckGL, {
   BitmapLayer,
@@ -27,16 +10,12 @@ import DeckGL, {
   COORDINATE_SYSTEM,
   GetPickingInfoParams,
   IconLayer,
-  Layer,
-  LayersList,
   LineLayer,
-  MapController,
   OrthographicView,
   PathLayer,
   PickingInfo,
   PolygonLayer,
 } from "deck.gl";
-import { buildings } from "@/lib/buildings";
 import { makePopup } from "@/components/map/popup";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,10 +27,9 @@ import {
   Point,
   rotatePoint,
   scalePoint,
-} from "../map/utils";
+} from "@/app/map/utils";
 import {
   adjustColorShades,
-  getMk,
   getMkColor,
   hexToRgb,
   RGB,
@@ -71,7 +49,6 @@ import { DropPod } from "@/types/drop-pod";
 import { PowerSlugs } from "@/types/power-slug";
 import { Vehicles } from "@/types/vehicles";
 import { Player } from "@/types/player";
-import { SpaceElevator } from "@/types/space-elevator";
 import axios from "axios";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -88,12 +65,24 @@ import {
 } from "@/components/ui/tooltip";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { hypertube_junction, hypertube_T } from "@/lib/polygons/hypertube";
-import { Portal } from "@/types/portal";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "motion/react";
 import { cubicBezier } from "motion";
 import Link from "next/link";
+import { generateIcons } from "@/public/map/markers";
+import { images } from "@/public/map/images";
+import { CLASSNAMED_PATH } from "@/public/map/paths";
+import { vehicles } from "@/components/map/popup/vehicles";
+import { players } from "@/components/map/popup/players";
+import { Drone } from "@/types/drone";
+import { Train } from "@/types/trains";
+import { TrainStatus } from "@/enums/train";
+import { CurrentFlyingMode } from "@/enums/drone";
+import { Portal } from "@/types/portal";
+import { HubTerminal } from "@/types/hub-terminal";
+import { buildings } from "@/lib/buildings";
+import { SpaceElevator } from "@/types/space-elevator";
 
 const slugClassNames = ["BP_Crystal_C", "BP_Crystal_mk2_C", "BP_Crystal_mk3_C"];
 
@@ -104,6 +93,16 @@ const slugTier = {
 };
 
 export default function MapPage() {
+  const [icons, setIcons] = useState<any>({});
+
+  useEffect(() => {
+    const load = async () => {
+      const allIcons = await generateIcons();
+      setIcons(allIcons);
+    };
+    load();
+  }, []);
+
   const MAP_VIEW = new OrthographicView({
     id: "2d-scene",
     flipY: false,
@@ -115,7 +114,7 @@ export default function MapPage() {
 
   const mapImg = new BitmapLayer({
     id: "map",
-    image: map,
+    image: "/map/map.avif",
     bounds: [-375e3 + 50301.83203125, -375e3, 375e3 + 50301.83203125, 375e3],
   });
 
@@ -223,7 +222,7 @@ export default function MapPage() {
       data: visible ? baseURL + nyaa[id].url + `#${dataVersion}` : [],
       getIcon: () => ({
         height: 92,
-        url: util_images.rotation,
+        url: images.Utils.Rotation,
         width: 72,
         anchorY: 66,
       }),
@@ -239,14 +238,21 @@ export default function MapPage() {
     });
   }
 
-  function MakeIconLayer(
-    iconUrl: string,
-    id: string,
-    visible: boolean,
-    getFilterValue?: any,
-    filterRange?: any,
-    getIconFunc?: (d: any) => any,
-  ) {
+  function MakeIconLayer({
+    id,
+    visible,
+    getFilterValue,
+    filterRange,
+    getIconFunc,
+    iconUrl,
+  }: {
+    id: string;
+    visible: boolean;
+    getFilterValue?: any;
+    filterRange?: any;
+    getIconFunc?: (d: any) => any;
+    iconUrl?: string;
+  }): any {
     let options: any = {
       autoHighlight: true,
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
@@ -317,8 +323,8 @@ export default function MapPage() {
   class IconPolygonLayer extends CompositeLayer<{
     id: string;
     visible: boolean;
-    iconUrl: string;
     getLineWidth: number;
+    iconUrl?: string;
     getFillColor?: any;
     getLineColor?: any;
     getIconFunc?: any;
@@ -429,7 +435,6 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
-
     renderLayers() {
       const visible = nyaa["belts"].visible;
 
@@ -610,7 +615,6 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
-
     renderLayers() {
       const visible = nyaa["pipes"].visible;
 
@@ -696,7 +700,6 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
-
     renderLayers() {
       const visible = nyaa["hypertubes"].visible;
 
@@ -798,35 +801,6 @@ export default function MapPage() {
     }
   }
 
-  class TrainLayer extends CompositeLayer<{
-    uwu: string;
-    ThisIsForUpdating: Function;
-  }> {
-    getPickingInfo({ info }: GetPickingInfoParams) {
-      if (!info.layer || !info.sourceLayer) return info;
-      info.layer = info.sourceLayer;
-      return info;
-    }
-
-    renderLayers() {
-      const visible = nyaa["train"].visible;
-
-      return [
-        MakePathLayer("train_rails", () => hexToRgb("#8839ef"), visible),
-        new IconPolygonLayer({
-          id: "train_station",
-          visible: visible,
-          iconUrl: misc.vehicles.trains.train_station,
-          getLineWidth: 20,
-          getFillColor: hexToRgb("#8aadf4"),
-          getLineColor: [41, 44, 60],
-        }),
-        MakeRotationLayer("train"),
-        MakeIconLayer(misc.vehicles.trains.train, "train", visible, null, null),
-      ];
-    }
-  }
-
   class VehicleLayer extends CompositeLayer<{
     uwu: string;
     ThisIsForUpdating: Function;
@@ -836,7 +810,6 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
-
     renderLayers() {
       const visible = nyaa["vehicles"].visible;
 
@@ -844,29 +817,88 @@ export default function MapPage() {
         new IconPolygonLayer({
           id: "truck_station",
           visible: visible,
-          iconUrl: misc.vehicles.trucks.truck_station,
+          iconUrl: icons?.Buildings?.Build_TruckStation_C ?? images.Empty,
           getLineWidth: 20,
           getFillColor: hexToRgb("#91d7e3"),
           getLineColor: [41, 44, 60],
         }),
         MakeRotationLayer("vehicles"),
-        MakeIconLayer(
-          misc.vehicles.trucks.truck,
-          "vehicles",
-          visible,
-          null,
-          null,
-          (d: Vehicles) => ({
+        MakeIconLayer({
+          id: "vehicles",
+          visible: visible,
+          getIconFunc: (d: Vehicles) => {
+            let img = images.Empty;
+            const v = icons?.Vehicles?.[d.ClassName];
+
+            if (v) {
+              if (!d.HasFuelForRoundtrip) img = v.RunningOutOfFuel;
+              else if (!d.HasFuel) img = v.OutOfFuel;
+              else if (d.Autopilot) img = v.Auto;
+              else if (!d.Autopilot && d.CurrentGear != 0) img = v.Manual;
+              else if (
+                !d.Autopilot &&
+                d.CurrentGear == 0 &&
+                Math.round(d.ForwardSpeed) == 0
+              )
+                img = v.Parked;
+            }
+            return {
+              height: 70,
+              width: 70,
+              url: img,
+            };
+          },
+        }),
+      ];
+    }
+  }
+
+  class TrainLayer extends CompositeLayer<{
+    uwu: string;
+    ThisIsForUpdating: Function;
+  }> {
+    getPickingInfo({ info }: GetPickingInfoParams) {
+      if (!info.layer || !info.sourceLayer) return info;
+      info.layer = info.sourceLayer;
+      return info;
+    }
+    renderLayers() {
+      const visible = nyaa["train"].visible;
+
+      return [
+        MakePathLayer("train_rails", () => hexToRgb("#8839ef"), visible),
+        new IconPolygonLayer({
+          id: "train_station",
+          visible: visible,
+          getIconFunc: () => ({
             height: 70,
-            url:
-              {
-                BP_Golfcart_C: misc.vehicles.factory_cart,
-                BP_Tractor_C: misc.vehicles.tractor,
-                BP_Truck_C: misc.vehicles.trucks.truck,
-              }[d.ClassName as string] ?? misc.vehicles.explorer,
+            url: icons?.Buildings?.Build_TrainStation_C ?? images.Empty,
             width: 70,
           }),
-        ),
+          getLineWidth: 20,
+          getFillColor: hexToRgb("#8aadf4"),
+          getLineColor: [41, 44, 60],
+        }),
+        MakeRotationLayer("train"),
+        MakeIconLayer({
+          id: "train",
+          visible: visible,
+          getIconFunc: (d: Train) => {
+            let img = images.Empty;
+            const v = icons?.Vehicles?.BP_Train_C;
+            if (v) {
+              if (d.Derailed) img = v.Derailed;
+              else if (
+                d.Status == TrainStatus.Parked ||
+                (d.Status == TrainStatus.SelfDriving && !d.TimeTable.length)
+              )
+                img = v.Parked;
+              else if (d.Status == TrainStatus.SelfDriving) img = v.Auto;
+              else if (d.Status == TrainStatus.ManualDriving) img = v.Manual;
+            }
+            return { height: 70, width: 70, url: img };
+          },
+        }),
       ];
     }
   }
@@ -880,7 +912,6 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
-
     renderLayers() {
       const visible = nyaa["drone"].visible;
 
@@ -888,13 +919,40 @@ export default function MapPage() {
         new IconPolygonLayer({
           id: "drone_station",
           visible: visible,
-          iconUrl: misc.drones.drone_station,
+          iconUrl: icons?.Buildings?.Build_DroneStation_C ?? images.Empty,
           getLineWidth: 20,
           getFillColor: hexToRgb("#b7bdf8"),
           getLineColor: [41, 44, 60],
         }),
         MakeRotationLayer("drone"),
-        MakeIconLayer(misc.drones.drone, "drone", visible, null, null),
+        MakeIconLayer({
+          id: "drone",
+          visible: visible,
+          getIconFunc: (d: Drone) => {
+            let img = images.Empty;
+            const v = icons?.Vehicles?.BP_DroneTransport_C;
+
+            if (v) {
+              if (d.CurrentFlyingMode == CurrentFlyingMode.Flying)
+                img = v.Flying;
+              else if (d.CurrentFlyingMode == CurrentFlyingMode.Travelling)
+                img = v.Travelling;
+              else if (d.CurrentDestination == "No Destination")
+                img = v.No_Destination;
+              else if (!d.HasPairedStation) img = v.No_Route;
+              else if (
+                d.CurrentFlyingMode == CurrentFlyingMode.None ||
+                d.CurrentFlyingMode == CurrentFlyingMode.Unknown
+              )
+                img = v.No_Route;
+            }
+            return {
+              height: 70,
+              width: 70,
+              url: v && typeof v === "string" ? v : img,
+            };
+          },
+        }),
       ];
     }
   }
@@ -908,8 +966,9 @@ export default function MapPage() {
       info.layer = info.sourceLayer;
       return info;
     }
+    renderLayers() {
+      const visible = nyaa["hypertubes"].visible;
 
-    renderLayers(): Layer | LayersList | null {
       return [
         new IconLayer({
           coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
@@ -918,7 +977,7 @@ export default function MapPage() {
             : [],
           getIcon: () => ({
             height: 92,
-            url: util_images.rotation,
+            url: images.Utils.Rotation,
             width: 72,
             anchorY: 66,
           }),
@@ -932,32 +991,34 @@ export default function MapPage() {
           },
           visible: nyaa["players"].visible,
         }),
-        MakeIconLayer(
-          misc.player.alive,
-          "players",
-          nyaa["players"].visible,
-          null,
-          null,
-          (d: Player) => ({
+        MakeIconLayer({
+          id: "players",
+          visible: nyaa["players"].visible,
+          getIconFunc: (d: Player) => ({
             url: d.Dead
-              ? misc.player.player_dead
+              ? (icons?.Players?.Dead ?? images.Empty)
               : (d.Online as boolean)
-                ? misc.player.alive
-                : misc.player.player_offline,
+                ? (icons?.Players?.Alive ?? images.Empty)
+                : (icons?.Players?.Offline ?? images.Empty),
             width: 72,
             height: 72,
           }),
-        ),
+        }),
       ];
     }
   }
 
   const master = [
-    MakeIconLayer(
-      power_slugs.power_slug,
-      "slugs",
-      nyaa["slugs"].visible,
-      (d: any) => {
+    MakeIconLayer({
+      id: "slugs",
+      visible: nyaa["slugs"].visible,
+      getIconFunc: (d: PowerSlugs) => ({
+        url: icons?.Slugs?.[d.ClassName] ?? images.Empty,
+        width: 70,
+        height: 70,
+      }),
+      filterRange: [1, 1],
+      getFilterValue: (d: any) => {
         const layerFilters = new_nyaa_filters.filter((filter) =>
           filter.startsWith("slugs"),
         );
@@ -967,38 +1028,17 @@ export default function MapPage() {
           ).length != 0;
         return layerFilters.length != 0 ? (isInFilters ? 1 : 0) : 1;
       },
-      [1, 1],
-      (d: PowerSlugs) => ({
-        url:
-          {
-            BP_Crystal_C: power_slugs.power_slug_mk1,
-            BP_Crystal_mk2_C: power_slugs.power_slug_mk2,
-            BP_Crystal_mk3_C: power_slugs.power_slug_mk3,
-          }[d.ClassName as string] ?? misc.question_mark,
-        width: 70,
+    }),
+    MakeIconLayer({
+      id: "artifacts",
+      visible: nyaa["artifacts"].visible,
+      getIconFunc: (d: Artifact) => ({
+        url: icons?.Artifacts?.[d.ClassName] ?? images.Empty,
         height: 70,
-      }),
-    ),
-    MakeIconLayer(
-      misc.drop_pod.drop_pod,
-      "drop_pod",
-      nyaa["drop_pod"].visible,
-      null,
-      null,
-      (d: DropPod) => ({
-        url: d.Looted
-          ? misc.drop_pod.drop_pod_collected
-          : misc.drop_pod.drop_pod,
         width: 70,
-        height: 70,
       }),
-    ),
-
-    MakeIconLayer(
-      artifacts.somersloop,
-      "artifacts",
-      nyaa["artifacts"].visible,
-      (d: any) => {
+      filterRange: [1, 1],
+      getFilterValue: (d: any) => {
         const layerFilters = new_nyaa_filters.filter((filter) =>
           filter.startsWith("artifacts"),
         );
@@ -1008,24 +1048,45 @@ export default function MapPage() {
           ).length != 0;
         return layerFilters.length != 0 ? (isInFilters ? 1 : 0) : 1;
       },
-      [1, 1],
-      (d: Artifact) => ({
-        height: 70,
-        url:
-          d.ClassName == Artifacts.Somersloop
-            ? artifacts.somersloop
-            : d.ClassName == Artifacts.MercerSphere
-              ? artifacts.mercer_sphere
-              : misc.question_mark,
+    }),
+    MakeIconLayer({
+      id: "lizard_doggos",
+      visible: nyaa["lizard_doggos"].visible,
+      getIconFunc: (d: any) => ({
+        url: icons?.Creatures?.[d.ClassName] ?? images.Empty,
         width: 70,
+        height: 70,
       }),
-    ),
-
-    MakeIconLayer(
-      misc.question_mark,
-      "resource_node",
-      nyaa["resource_node"].visible,
-      (d: any) => {
+    }),
+    MakeIconLayer({
+      id: "drop_pod",
+      visible: nyaa["drop_pod"].visible,
+      getIconFunc: (d: DropPod) => ({
+        url: icons?.Drop_Pods
+          ? d.Opened
+            ? d.Looted
+              ? icons.Drop_Pods.Looted
+              : icons.Drop_Pods.Not_Looted
+            : d.RequiredPower != 0
+              ? icons.Drop_Pods.Power
+              : icons.Drop_Pods.Not_Open
+          : images.Empty,
+        width: 70,
+        height: 70,
+      }),
+    }),
+    MakeIconLayer({
+      id: "resource_node",
+      visible: nyaa["resource_node"].visible,
+      getIconFunc: (d: ResourceNode) => ({
+        url:
+          icons?.Resources?.[d.ClassName][d.Purity][d.Exploited ? "v" : "x"] ??
+          images.Empty,
+        width: 70,
+        height: 70,
+      }),
+      filterRange: [1, 1],
+      getFilterValue: (d: any) => {
         const layerFilters = new_nyaa_filters.filter((filter) =>
           filter.startsWith("resource_node"),
         );
@@ -1036,15 +1097,7 @@ export default function MapPage() {
           }).length != 0;
         return layerFilters.length != 0 ? (isInFilters ? 1 : 0) : 1;
       },
-      [1, 1],
-      (d: ResourceNode) => ({
-        url: d.ClassName
-          ? `${resources + d.ClassName}/${d.Purity.toLowerCase()}.avif`
-          : misc.question_mark,
-        width: 70,
-        height: 70,
-      }),
-    ),
+    }),
 
     new LineLayer({
       pickable: true,
@@ -1056,9 +1109,9 @@ export default function MapPage() {
       getSourcePosition: (d: any) => [d["location0"].x, d["location0"].y * -1],
       getTargetPosition: (d: any) => [d["location1"].x, d["location1"].y * -1],
       getWidth: 2,
-      visible: nyaa.cables.visible,
+      visible: nyaa["cables"].visible,
       updateTriggers: {
-        visible: nyaa.cables.visible,
+        visible: nyaa["cables"].visible,
       },
     }),
 
@@ -1203,7 +1256,6 @@ export default function MapPage() {
     new IconPolygonLayer({
       id: "space_elevator",
       visible: nyaa["space_elevator"].visible,
-      iconUrl: misc.space_elevator.space_elevator,
       getLineWidth: 20,
       getFillColor: mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.PrimaryColor))
@@ -1212,11 +1264,15 @@ export default function MapPage() {
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
         : [41, 44, 60],
       getIconFunc: (d: SpaceElevator) => ({
-        height: 70,
         url:
-          d.FullyUpgraded || d.UpgradeReady
-            ? misc.space_elevator.space_elevator_ready
-            : misc.space_elevator.space_elevator,
+          icons?.Buildings?.Build_SpaceElevator_C[
+            d.FullyUpgraded
+              ? "Fully_Upgraded"
+              : d.UpgradeReady
+                ? "Upgrade_Ready"
+                : "Upgrade_Not_Ready"
+          ] ?? images.Empty,
+        height: 70,
         width: 70,
       }),
     }),
@@ -1224,59 +1280,60 @@ export default function MapPage() {
     new IconPolygonLayer({
       id: "radar",
       visible: nyaa["radar"].visible,
-      iconUrl: misc.radar_tower,
-      getLineWidth: 20,
-      getFillColor: () => hexToRgb("#f0c6c6"),
-      getLineColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    }),
-    new IconPolygonLayer({
-      id: "switches",
-      visible: nyaa["switches"].visible,
-      iconUrl: misc.power,
-      getLineWidth: 20,
-      getFillColor: () => hexToRgb("#f0c6c6"),
-      getLineColor: mapUseInGameColors
-        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
-        : [41, 44, 60],
-    }),
-
-    new PlayerLayer({
-      uwu: "uwu",
-      ThisIsForUpdating: () => {},
-    }),
-
-    MakeIconLayer(misc.hub, "hub", nyaa["hub"].visible, null, null),
-    MakeIconLayer(
-      normal.animals.lizard_doggo,
-      "lizard_doggos",
-      nyaa["lizard_doggos"].visible,
-      null,
-      null,
-      (d: ResourceNode) => ({
-        url: animals.lizard_doggo,
-        width: 70,
-        height: 70,
-      }),
-    ),
-    new IconPolygonLayer({
-      id: "portals",
-      visible: nyaa["portals"].visible,
-      iconUrl: misc.portal.portal,
       getLineWidth: 20,
       getFillColor: () => hexToRgb("#f0c6c6"),
       getLineColor: mapUseInGameColors
         ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
         : [41, 44, 60],
       getIconFunc: (d: Portal) => ({
-        url: {
-          Build_PortalSatellite_C: misc.portal.portal_satellite,
-          Build_Portal_C: misc.portal.portal,
-        }[d.ClassName],
+        url: icons?.Buildings?.Build_RadarTower_C ?? images.Empty,
         width: 70,
         height: 70,
       }),
+    }),
+    new IconPolygonLayer({
+      id: "switches",
+      visible: nyaa["switches"].visible,
+      iconUrl: images.Markers.Power,
+      getLineWidth: 20,
+      getFillColor: () => hexToRgb("#f0c6c6"),
+      getLineColor: mapUseInGameColors
+        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
+        : [41, 44, 60],
+    }),
+    MakeIconLayer({
+      id: "hub",
+      visible: nyaa["hub"].visible,
+      getIconFunc: (d: HubTerminal) => ({
+        url:
+          icons?.Buildings?.Build_HubTerminal_C[
+            !d.ShipDock
+              ? "Ship_Returning"
+              : !d.HasActiveMilestone
+                ? "No_Milestone"
+                : "Normal"
+          ] ?? images.Empty,
+        width: 70,
+        height: 70,
+      }),
+    }),
+    new IconPolygonLayer({
+      id: "portals",
+      visible: nyaa["portals"].visible,
+      getLineWidth: 20,
+      getFillColor: () => hexToRgb("#f0c6c6"),
+      getLineColor: mapUseInGameColors
+        ? (d: any) => hexToRgb(toHex6(d.ColorSlot.SecondaryColor))
+        : [41, 44, 60],
+      getIconFunc: (d: Portal) => ({
+        url: icons?.Buildings?.[d.ClassName] ?? images.Empty,
+        width: 70,
+        height: 70,
+      }),
+    }),
+    new PlayerLayer({
+      uwu: "uwu",
+      ThisIsForUpdating: () => {},
     }),
   ];
 
@@ -1306,7 +1363,7 @@ export default function MapPage() {
                 extra: string[];
                 layerId: string;
               }) => {
-                const icon = `markers/normal/${className}.avif`;
+                const icon = `${CLASSNAMED_PATH}${className}.avif`;
 
                 const visibleBadges = extra.filter((tier: string) =>
                   new_nyaa_filters.includes(`${layerId}-${className}-${tier}`),

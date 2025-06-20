@@ -1,10 +1,4 @@
-import {
-  adjustColorShades,
-  getMk,
-  getMkColor,
-  RGB,
-  rgbToHsl,
-} from "@/lib/helpers";
+import { adjustColorShades, RGB, rgbToHsl } from "@/lib/helpers";
 import React from "react";
 import { ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
 

@@ -1,4 +1,4 @@
-import { adjustColorShades, getMkColor, RGB, rgbToHsl } from "@/lib/helpers";
+import { getMkColor, rgbToHsl } from "@/lib/helpers";
 import React from "react";
 
 export function pipes(data: any, layer: any) {

@@ -18,6 +18,8 @@ type Vehicles<Type extends VehicleType = VehicleType> = IDClassObject<Type> &
     Airborne: boolean;
     FollowingPath: boolean;
     Autopilot: boolean;
+    HasFuel: boolean;
+    HasFuelForRoundtrip: boolean;
     Inventory: InventoryItem[];
     FuelInventory: InventoryItem[];
   };
